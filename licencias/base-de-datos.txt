@@ -1,0 +1,25 @@
+Licencias de la base de datos
+================================
+Completa los valores según el motor y el entorno correspondiente.
+No compartas este archivo ni lo subas a repositorios públicos.
+
+Motor (SQL Server | Oracle | PostgreSQL | MySQL | Otro):
+DB_MOTOR=
+
+Entorno (desarrollo | pruebas | produccion):
+DB_ENTORNO=
+
+Clave / número de licencia:
+DB_LICENSE_KEY=
+
+Nombre del producto o edición (ej. Enterprise, Standard):
+DB_LICENSE_PRODUCT=
+
+Titular de la licencia:
+DB_LICENSE_HOLDER=
+
+Fecha de vencimiento (AAAA-MM-DD):
+DB_LICENSE_EXPIRES=
+
+Notas adicionales:
+DB_LICENSE_NOTES=

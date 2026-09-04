@@ -1,0 +1,101 @@
+appId: com.balderrama.kpis
+productName: KPIs Balderrama
+copyright: Copyright © Balderrama
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - main.js
+  - preload.js
+  - updater.js
+  - loading.html
+  - package.json
+  - assets/**
+
+publish:
+  provider: generic
+  url: https://kpis-balderrama-production.up.railway.app/desktop-updates
+
+# node_modules debe ir en entradas aparte: electron-builder a veces
+# omite node_modules al copiar carpetas padre con filter.
+extraResources:
+  - from: ../backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!**/node_modules/**"
+      # Incluir .env en builds internos (misma máquina / red Balderrama).
+      # Si se distribuye fuera, quitar el .env del paquete y usar solo userData.
+      - "!**/data/*.db-wal"
+      - "!**/data/*.db-shm"
+      - "!**/data/_ordenes-*"
+      - "!**/data/ordenes-series.xlsx"
+      - "!**/data/*.pdf"
+      - "!**/data/*.xlsx.tmp"
+      - "!**/scripts/_*.js"
+  - from: ../backend/node_modules
+    to: backend/node_modules
+  - from: ../frontend
+    to: frontend
+    filter:
+      - "**/*"
+      - "!**/node_modules/**"
+      - "!**/.env"
+      - "!**/node_modules/.cache/**"
+  - from: ../frontend/node_modules
+    to: frontend/node_modules
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: assets/icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: KPIs Balderrama
+  artifactName: "kpis-balderrama-setup-${version}-win-${arch}.${ext}"
+
+portable:
+  artifactName: "${productName}-Portable-${version}-Windows-${arch}.${ext}"
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  icon: assets/icon.icns
+  category: public.app-category.business
+  artifactName: "${productName}-${version}-Mac-${arch}.${ext}"
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+
+dmg:
+  title: KPIs Balderrama
+  icon: assets/icon.icns
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+linux:
+  target:
+    - AppImage
+  icon: assets/icon.png
+  category: Office

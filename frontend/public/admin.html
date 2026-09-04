@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Administración | BALDERRAMA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=88" rel="stylesheet"/>
+</head>
+<body class="dashboard-body" data-page="admin">
+<div id="loading" class="loading-overlay hidden"><div class="spinner"></div></div>
+<aside id="sidebar"></aside>
+<main class="main-shell">
+<header class="top-bar">
+<div class="top-bar-actions">
+<span class="top-bar-title">Administración</span>
+</div>
+</header>
+<div class="main-content custom-scrollbar">
+
+<section class="section-panel dashboard-section">
+<div class="admin-header">
+<div>
+<h2 class="section-title">Usuarios del dashboard</h2>
+<p class="admin-subtitle">Cree y administre cuentas con acceso por rol.</p>
+</div>
+<button type="button" class="btn-glass btn-primary" id="btnNewUser">
+<span class="material-symbols-outlined">person_add</span>
+<span>Nuevo usuario</span>
+</button>
+</div>
+
+<div id="adminMessage" class="admin-message hidden" role="status"></div>
+
+<div class="table-scroll">
+<table class="data-table admin-users-table">
+<thead>
+<tr>
+<th>Usuario</th>
+<th>Rol</th>
+<th>Estado</th>
+<th>Creado</th>
+<th>Acciones</th>
+</tr>
+</thead>
+<tbody id="usersTableBody"></tbody>
+</table>
+</div>
+</section>
+
+<section class="section-panel dashboard-section" id="rolePermissionsSection">
+<div class="admin-header">
+<div>
+<h2 class="section-title">Permisos por rol</h2>
+<p class="admin-subtitle">Seleccione qué módulos puede ver cada rol. El acceso a API se ajusta según las páginas marcadas.</p>
+</div>
+<div class="admin-header-actions">
+<button type="button" class="btn-glass btn-secondary" id="btnResetRolePermissions">
+<span class="material-symbols-outlined">restart_alt</span>
+<span>Restablecer</span>
+</button>
+<button type="button" class="btn-glass btn-primary" id="btnSaveRolePermissions">
+<span class="material-symbols-outlined">save</span>
+<span>Guardar permisos</span>
+</button>
+</div>
+</div>
+<p id="rolePermissionsMeta" class="admin-hint"></p>
+<div id="rolePermissionsGrid" class="admin-alert-prefs"></div>
+</section>
+
+<section class="section-panel dashboard-section" id="alertPrefsSection">
+<div class="admin-header">
+<div>
+<h2 class="section-title">Alertas por perfil</h2>
+<p class="admin-subtitle">Defina qué tipos de alerta recibe cada rol en el menú de usuario.</p>
+</div>
+<button type="button" class="btn-glass btn-primary" id="btnSaveAlertPrefs">
+<span class="material-symbols-outlined">save</span>
+<span>Guardar alertas</span>
+</button>
+</div>
+<div id="alertPrefsGrid" class="admin-alert-prefs"></div>
+</section>
+
+<section class="section-panel dashboard-section" id="adminProrationSection">
+<div class="admin-header">
+<div>
+<h2 class="section-title">Gastos de administración (EEFF)</h2>
+<p class="admin-subtitle">Reparto del bolsón administrativo entre ventas y postventa. Se aplica al estado de resultados / EEFF.</p>
+</div>
+<div class="admin-header-actions">
+<button type="button" class="btn-glass btn-secondary" id="btnResetProration">
+<span class="material-symbols-outlined">restart_alt</span>
+<span>Restablecer</span>
+</button>
+<button type="button" class="btn-glass btn-primary" id="btnSaveProration">
+<span class="material-symbols-outlined">save</span>
+<span>Guardar prorrateo</span>
+</button>
+</div>
+</div>
+<p id="prorationMeta" class="admin-hint"></p>
+<div class="admin-proration-shares">
+<label class="admin-field">
+<span>Participación ventas</span>
+<div class="admin-pct-input">
+<input type="number" id="prorationVentasShare" min="0" max="100" step="0.1" value="70"/>
+<span>%</span>
+</div>
+</label>
+<label class="admin-field">
+<span>Participación postventa</span>
+<div class="admin-pct-input">
+<input type="number" id="prorationPostventaShare" min="0" max="100" step="0.1" value="30"/>
+<span>%</span>
+</div>
+</label>
+<div class="admin-proration-total">
+<span class="admin-hint">Suma bloques</span>
+<strong id="prorationShareTotal">100%</strong>
+</div>
+</div>
+<div class="admin-proration-grid">
+<div class="admin-proration-block">
+<div class="admin-proration-block-head">
+<h3 class="admin-alert-role-title">Ventas</h3>
+<p class="admin-hint">% dentro del bloque ventas (deben sumar 100%). La columna “Del total” es el impacto real sobre el gasto de administración.</p>
+</div>
+<div class="table-scroll">
+<table class="data-table admin-proration-table">
+<thead>
+<tr>
+<th>Concepto</th>
+<th class="cell-num">% del bloque</th>
+<th class="cell-num">% del total</th>
+</tr>
+</thead>
+<tbody id="prorationVentasBody"></tbody>
+<tfoot>
+<tr>
+<td><strong>Total bloque ventas</strong></td>
+<td class="cell-num" id="prorationVentasBlockSum">—</td>
+<td class="cell-num" id="prorationVentasTotalSum">—</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<div class="admin-proration-block">
+<div class="admin-proration-block-head">
+<h3 class="admin-alert-role-title">Postventa</h3>
+<p class="admin-hint">% del total del gasto de administración (deben sumar la participación de postventa).</p>
+</div>
+<div class="table-scroll">
+<table class="data-table admin-proration-table">
+<thead>
+<tr>
+<th>Concepto</th>
+<th class="cell-num">% del total</th>
+</tr>
+</thead>
+<tbody id="prorationPostventaBody"></tbody>
+<tfoot>
+<tr>
+<td><strong>Total postventa</strong></td>
+<td class="cell-num" id="prorationPostventaSum">—</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</div>
+</section>
+
+<section class="section-panel dashboard-section" id="adminListaPreciosSection">
+<div class="admin-header">
+<div>
+<h2 class="section-title">Lista de precios mensual</h2>
+<p class="admin-subtitle">Suba el PDF completo de Planes Chevrolet del mes (ej. <em>01 AGO Planes Chevrolet MY26.pdf</em>). El sistema lee el índice y usa solo <strong>Guía Administración</strong> y <strong>Bono Toma a Cuenta</strong>; ignora Vendedores, precios distribuidor/público y notas.</p>
+</div>
+<button type="button" class="btn-glass btn-primary" id="btnUploadListaPrecios" disabled>
+<span class="material-symbols-outlined">upload_file</span>
+<span>Procesar y publicar</span>
+</button>
+</div>
+<p id="listaPreciosCatalogMeta" class="admin-hint">Cargando catálogo vigente…</p>
+<div class="admin-lista-precios-upload">
+<label class="admin-field admin-file-field">
+<span>Archivo PDF</span>
+<input type="file" id="listaPreciosFile" accept="application/pdf,.pdf"/>
+</label>
+<p id="listaPreciosFileName" class="admin-hint">Ningún archivo seleccionado</p>
+<div id="listaPreciosUploadStatus" class="admin-hint" aria-live="polite"></div>
+</div>
+
+<div class="admin-lista-precios-images">
+<div class="admin-header" style="margin-top:22px;margin-bottom:10px">
+<div>
+<h3 class="section-title" style="font-size:1.05rem;margin:0">Imágenes por modelo</h3>
+<p class="admin-subtitle" style="margin-top:4px">Suba una foto por carline (JPG, PNG o WEBP, máx. 5&nbsp;MB). Se muestra en el listado de precios.</p>
+</div>
+<span id="listaPreciosImagesMeta" class="admin-hint">—</span>
+</div>
+<div class="admin-lista-precios-image-form">
+<label class="admin-field">
+<span>Modelo</span>
+<select id="listaPreciosImageModelo">
+<option value="">Seleccionar modelo…</option>
+</select>
+</label>
+<label class="admin-field admin-file-field">
+<span>Imagen</span>
+<input type="file" id="listaPreciosImageFile" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"/>
+</label>
+<button type="button" class="btn-glass btn-primary" id="btnUploadListaPreciosImage" disabled>
+<span class="material-symbols-outlined">image</span>
+<span>Subir imagen</span>
+</button>
+</div>
+<p id="listaPreciosImageStatus" class="admin-hint" aria-live="polite"></p>
+<div id="listaPreciosImagesGrid" class="admin-lp-images-grid"></div>
+</div>
+</section>
+
+<section class="section-panel dashboard-section admin-form-panel hidden" id="userFormPanel">
+<h3 class="section-title" id="userFormTitle">Nuevo usuario</h3>
+<form id="userForm" class="admin-form">
+<input type="hidden" id="editUsername" value=""/>
+<label class="admin-field">
+<span>Usuario</span>
+<input type="text" id="formUsername" required autocomplete="off" placeholder="ej. jperez"/>
+</label>
+<label class="admin-field">
+<span>Contraseña</span>
+<input type="password" id="formPassword" autocomplete="new-password" placeholder="Mínimo 8 caracteres"/>
+<p class="admin-hint" id="passwordHint">Obligatoria al crear. Al editar, déjela vacía para no cambiarla.</p>
+<div class="admin-password-reveal hidden" id="passwordRevealWrap">
+<button type="button" class="btn-glass btn-secondary" id="btnRevealPassword">
+<span class="material-symbols-outlined">visibility</span>
+Ver contraseña actual
+</button>
+<p class="admin-hint" id="revealedPassword"></p>
+</div>
+</label>
+<label class="admin-field">
+<span>Rol</span>
+<select id="formRole" required></select>
+</label>
+<label class="admin-field admin-field-check hidden" id="activeFieldWrap">
+<span>
+<input type="checkbox" id="formActive" checked/>
+Usuario activo
+</span>
+</label>
+<div class="admin-form-actions">
+<button type="submit" class="btn-glass btn-primary" id="btnSaveUser">Guardar</button>
+<button type="button" class="btn-glass btn-secondary" id="btnCancelUser">Cancelar</button>
+</div>
+</form>
+</section>
+
+</div>
+</main>
+<script src="/js/auth-client.js"></script>
+<script src="/js/shared.js?v=5"></script>
+<script src="/js/sidebar.js?v=11"></script>
+<script src="/js/topbar.js?v=18"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/admin.js?v=7"></script>
+</body>
+</html>

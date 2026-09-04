@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>PostVenta | BALDERRAMA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=88" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="dashboard-body" data-page="post-sales">
+<div id="loading" class="loading-overlay hidden"><div class="spinner"></div></div>
+<aside id="sidebar"></aside>
+<main class="main-shell">
+<header class="top-bar">
+<div class="top-bar-actions">
+<span class="top-bar-title">PostVenta</span>
+</div>
+</header>
+<div class="main-content custom-scrollbar">
+
+<section class="section-panel dashboard-section filters-compact filters-panel">
+<div class="filters-compact-bar">
+<button type="button" class="filter-pill" id="pillPeriod" aria-expanded="false" aria-controls="drawerPeriod">
+<span class="material-symbols-outlined filter-pill__icon">calendar_month</span>
+<span class="filter-pill__text">
+<span class="filter-pill__label">Periodo</span>
+<span class="filter-pill__value" id="filterPeriodLabel">—</span>
+</span>
+<span class="material-symbols-outlined filter-pill__chevron">expand_more</span>
+</button>
+<button type="button" class="filter-pill" id="pillPresets" aria-expanded="false" aria-controls="drawerPresets">
+<span class="material-symbols-outlined filter-pill__icon">bolt</span>
+<span class="filter-pill__text">
+<span class="filter-pill__label">Rango rápido</span>
+<span class="filter-pill__value" id="filterPresetLabel">Mes actual</span>
+</span>
+<span class="material-symbols-outlined filter-pill__chevron">expand_more</span>
+</button>
+<button type="button" class="filter-pill" id="pillOps" aria-expanded="false" aria-controls="drawerOps">
+<span class="material-symbols-outlined filter-pill__icon">tune</span>
+<span class="filter-pill__text">
+<span class="filter-pill__label">Criterios</span>
+<span class="filter-pill__value" id="filterOpsLabel">Todos</span>
+</span>
+<span class="material-symbols-outlined filter-pill__chevron">expand_more</span>
+</button>
+<button type="button" id="btnConsultar" class="btn-glass btn-primary filters-compact__action">Consultar</button>
+</div>
+<div class="filters-header-actions filters-compact-meta">
+<button type="button" id="btnClearFilters" class="btn-glass btn-clear-filters">Limpiar filtros</button>
+<span class="filter-badge" id="filterActiveCount">Sin filtros operativos</span>
+</div>
+<div id="drawerPeriod" class="filter-drawer hidden" role="region">
+<div class="filter-drawer__inner">
+<div class="filter-row filter-row--compact filter-row-period">
+<label class="filter-field filter-field-date"><span class="filter-label">Desde</span><input type="date" id="fechaInicio" class="filter-input"/></label>
+<label class="filter-field filter-field-date"><span class="filter-label">Hasta</span><input type="date" id="fechaFin" class="filter-input"/></label>
+</div>
+</div>
+</div>
+<div id="drawerPresets" class="filter-drawer hidden" role="region">
+<div class="filter-drawer__inner filter-chips filter-chips--drawer">
+<button type="button" class="chip" data-preset="mes-actual">Mes actual</button>
+<button type="button" class="chip" data-preset="mes-anterior">Mes anterior</button>
+<button type="button" class="chip" data-preset="ultimos-30">Últimos 30 días</button>
+<button type="button" class="chip" data-preset="acumulado-anio">Acumulado del año</button>
+<button type="button" class="chip" data-preset="anio-anterior">Año anterior</button>
+<button type="button" class="chip" data-preset="ultimo-trimestre">Último trimestre</button>
+<button type="button" class="chip" data-preset="trimestre-actual">Trimestre actual</button>
+</div>
+</div>
+<div id="drawerOps" class="filter-drawer hidden" role="region">
+<div class="filter-drawer__inner">
+<div class="filter-grid-ops">
+<label class="filter-field"><span class="filter-label">Estatus</span><select id="fStatus" class="filter-select"><option value="">Todos</option></select></label>
+<div class="filter-field filter-field--multi">
+<span class="filter-label">Tipo de orden</span>
+<button type="button" class="filter-select filter-multi__btn" id="fTipoBtn" aria-expanded="false" aria-controls="fTipoPanel" aria-haspopup="listbox">
+<span id="fTipoLabel">Todos</span>
+<span class="material-symbols-outlined filter-multi__chevron" aria-hidden="true">expand_more</span>
+</button>
+<div class="filter-multi__panel hidden" id="fTipoPanel" role="listbox" aria-multiselectable="true" aria-label="Tipos de orden">
+<div class="filter-multi__toolbar">
+<button type="button" class="filter-multi__link" data-tipo-action="all">Seleccionar todos</button>
+<button type="button" class="filter-multi__link" data-tipo-action="none">Limpiar</button>
+</div>
+<div class="filter-multi__options" id="fTipoOptions"></div>
+</div>
+</div>
+<label class="filter-field"><span class="filter-label">Antigüedad</span><select id="fAntiguedad" class="filter-select"><option value="">Todas</option></select></label>
+<label class="filter-field"><span class="filter-label">Asesor</span><select id="fAsesor" class="filter-select"><option value="">Todos</option></select></label>
+</div>
+<div class="filter-grid-post filter-grid-advanced filter-grid-ops-advanced">
+<label class="filter-span-2"><span class="filter-label">Buscar</span><input id="buscarOrdenes" type="search" placeholder="Orden, cliente, VIN, asesor, factura..." class="filter-input filter-input-wide" autocomplete="off"/></label>
+<label><span class="filter-label">Importe mín.</span><input type="number" id="fImporteMin" class="filter-input" min="0" step="1" placeholder="0"/></label>
+<label><span class="filter-label">Importe máx.</span><input type="number" id="fImporteMax" class="filter-input" min="0" step="1" placeholder="Sin límite"/></label>
+<label class="filter-check"><input type="checkbox" id="fCriticas"/><span>Solo órdenes críticas</span></label>
+<label class="filter-check"><input type="checkbox" id="fPromesa"/><span>Promesa vencida</span></label>
+</div>
+</div>
+</div>
+</section>
+
+<div class="postventa-tabs-row">
+<nav class="contabilidad-tabs postventa-main-tabs" id="postVentaMainTabs" aria-label="Secciones de PostVenta">
+<button type="button" class="contabilidad-tab active" data-ps-section="posventa" aria-controls="panelPosVentaHome" aria-selected="true">
+<span class="material-symbols-outlined" aria-hidden="true">handshake</span>
+PostVenta
+</button>
+<button type="button" class="contabilidad-tab" data-ps-section="servicio" aria-controls="panelPostVentaOrdenes" aria-selected="false">
+<span class="material-symbols-outlined" aria-hidden="true">build</span>
+Servicio
+</button>
+<button type="button" class="contabilidad-tab" data-ps-section="refacciones" aria-controls="panelPostVentaRefacciones" aria-selected="false">
+<span class="material-symbols-outlined" aria-hidden="true">warehouse</span>
+Refacciones
+</button>
+<button type="button" class="contabilidad-tab" data-ps-section="hyp" aria-controls="panelPostVentaOrdenes" aria-selected="false">
+<span class="material-symbols-outlined" aria-hidden="true">format_paint</span>
+HyP
+</button>
+</nav>
+
+<section id="hypSegmentacionBar" class="hyp-seg hidden" aria-label="Segmentación HyP">
+<div id="hypOpsTipoChips" class="hyp-seg__filters" role="group" aria-label="Tipos de orden HyP visibles"></div>
+</section>
+</div>
+
+<section id="panelPosVentaHome" class="postventa-area-panel" data-ps-panel="posventa">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">PostVenta</h3>
+<p class="section-subtitle" id="postSalesAreaHint">Vista principal · Servicio, Refacciones y HyP</p>
+<div id="posVentaHomeSections" class="kpi-grid"></div>
+</section>
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Resumen consolidado</h3>
+<p class="section-subtitle">Indicadores del periodo sin filtrar por sección</p>
+<div class="kpi-grid kpi-grid--eeff" id="kpiPosVentaHome"></div>
+</section>
+</section>
+
+<section id="panelPostVentaOrdenes" class="postventa-area-panel hidden" data-ps-panel="ordenes">
+
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Indicadores operativos</h3>
+<p class="section-subtitle">Volumen, importes, antigüedad y operación de taller · clic en un KPI para ver el detalle</p>
+<div id="kpiOperational"></div>
+<div id="opsKpiDetail" class="kpi-detail-panel hidden" style="margin-top:14px"></div>
+</section>
+
+<section id="panelHypCobranza" class="dashboard-section hidden" data-hyp-cobranza>
+<div class="hyp-cobranza-duo">
+<section class="section-panel hyp-cobranza-panel" data-hyp-cob-panel="aseg">
+<h3 class="section-title">Cobranza aseguradoras</h3>
+<p class="section-subtitle">Órdenes facturadas V* (Body 31) y A* (matriz) · pendiente vs enviado/pagado por CXC</p>
+<div id="kpiHypCobranza"></div>
+</section>
+
+<section class="section-panel hyp-cobranza-panel" data-hyp-cob-panel="garantias">
+<h3 class="section-title">Cobranza garantías</h3>
+<p class="section-subtitle">Órdenes internas HyP · J* / H* / Ó* · pendiente vs enviado/pagado por CXC</p>
+<div id="kpiHypGarantias"></div>
+</section>
+</div>
+</section>
+
+<section id="panelCuadreOrdenesHyp" class="dashboard-section hidden" data-hyp-cuadre>
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Cuadre de Órdenes HyP</h3>
+<p class="section-subtitle">Contpaq MOVDET (0470 / 0476 / 0477 / 0479) ↔ DMS · sub sin IVA · por orden y factura</p>
+<div id="kpiCuadreOrdenesHyp" class="kpi-grid kpi-grid--eeff"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Resumen por cuenta</h3>
+<span id="cuadreOrdenesHypMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Cuenta</th>
+<th>Concepto</th>
+<th class="cell-num">Contpaq</th>
+<th class="cell-num">DMS</th>
+<th class="cell-num">Diferencia</th>
+<th class="cell-num">Líneas</th>
+</tr>
+</thead>
+<tbody id="tblCuadreOrdenesHypCuentas"></tbody>
+</table>
+</div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Matriz orden / factura</h3>
+<span class="top-bar-meta">0477 RE · 0470 MO · 0479 pintura · 0476 TOT</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Orden</th>
+<th>Factura</th>
+<th>VIN</th>
+<th>Cierre</th>
+<th>Letra</th>
+<th>Status</th>
+<th class="cell-num">0477</th>
+<th class="cell-num">0470</th>
+<th class="cell-num">0479</th>
+<th class="cell-num">0476</th>
+<th class="cell-num">Neto</th>
+</tr>
+</thead>
+<tbody id="tblCuadreOrdenesHypMatriz"></tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section class="chart-grid">
+<div class="section-panel table-panel"><h3 class="section-title">Control por aseguradora</h3><p class="section-subtitle">Solo órdenes con aseguradora registrada · clic en una fila para ver el resumen</p><div class="table-scroll"><table class="data-table data-table--selectable"><thead><tr><th>Aseguradora</th><th>Órdenes</th><th>Facturadas</th><th>Importe facturado</th><th>Abiertas</th><th>Importe abierto</th></tr></thead><tbody id="tblAseg"></tbody></table></div></div>
+<div class="section-panel table-panel"><h3 class="section-title">Control de órdenes</h3><p class="section-subtitle">Sin aseguradora · tipo por letra del folio</p><div class="table-scroll"><table class="data-table"><thead><tr><th>Tipo de orden</th><th>Órdenes</th><th>Facturadas</th><th>Importe facturado</th><th>Abiertas</th><th>Importe abierto</th></tr></thead><tbody id="tblControlOrdenes"></tbody></table></div></div>
+</section>
+
+<section id="panelMesCursoNomenclatura" class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Acumulado de órdenes de reparación</h3>
+<span id="mesCursoNomenLabel" class="top-bar-meta">N · D · Q · C · X · Y</span>
+</div>
+<p class="section-subtitle">Órdenes tipo 1 · razón de visita 1, 2, 3, 4</p>
+<div class="table-scroll postventa-mes-curso-wrap">
+<table class="data-table data-table--mes-curso">
+<thead>
+<tr>
+<th>Fecha</th>
+<th class="cell-num" title="N · Normal">Normal</th>
+<th class="cell-num" title="D · Reparación">Reparación</th>
+<th class="cell-num" title="Q · Normal Zacatelco">Normal Zacatelco</th>
+<th class="cell-num" title="C · Reparación Zacatelco">Reparación Zacatelco</th>
+<th class="cell-num" title="X · Reparación Cholula">Reparación Cholula</th>
+<th class="cell-num" title="Y · Normal Cholula">Normal Cholula</th>
+<th class="cell-num">Total día</th>
+<th class="cell-num">Acum.</th>
+</tr>
+</thead>
+<tbody id="tblMesCursoNomen"></tbody>
+</table>
+</div>
+<p id="mesCursoNomenLegend" class="section-subtitle postventa-mes-curso-legend"></p>
+</section>
+
+<section class="section-panel dashboard-section" data-hyp-hide>
+<h3 class="section-title">Flujo semanal</h3>
+<div class="chart-card"><div class="chart-wrap"><canvas id="cWeekly"></canvas></div></div>
+</section>
+
+<section class="section-panel dashboard-section" data-hyp-hide>
+<h3 class="section-title">Estatus por semana de ingreso</h3>
+<div class="chart-card"><div class="chart-wrap"><canvas id="cStatusWeek"></canvas></div></div>
+</section>
+
+<section class="section-panel table-panel dashboard-section" data-hyp-hide>
+<h3 class="section-title">Órdenes críticas</h3>
+<div class="table-scroll"><table class="data-table"><thead><tr><th>Orden</th><th>Cliente</th><th>Asesor</th><th>Días</th><th>Importe</th><th>Promesa</th></tr></thead><tbody id="tblCriticas"></tbody></table></div>
+</section>
+
+<section class="chart-grid" data-hyp-hide>
+<div class="section-panel table-panel"><h3 class="section-title">Productividad por asesor</h3><div class="table-scroll"><table class="data-table"><thead><tr><th>Asesor</th><th>Órdenes</th><th>Facturadas</th><th>Abiertas</th><th>Importe</th></tr></thead><tbody id="tblAsesor"></tbody></table></div></div>
+</section>
+
+<section class="section-panel dashboard-section" data-hyp-hide>
+<h3 class="section-title">Resumen directivo</h3>
+<p class="section-subtitle">Indicadores clave del periodo · vista gerencial</p>
+<div class="kpi-grid kpi-grid--eeff" id="kpiExecutive"></div>
+</section>
+
+</section>
+
+<section id="panelPostVentaRefacciones" class="postventa-area-panel hidden" data-ps-panel="refacciones">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Refacciones</h3>
+<p class="section-subtitle">Ventas financieras · catálogo/existencias · pedidos a planta · pendientes</p>
+<nav class="eeff-tabs" id="refaccionesSubTabs" aria-label="Subsecciones de Refacciones">
+<button type="button" class="eeff-tab active" data-ref-tab="ventas" aria-pressed="true">
+<span class="material-symbols-outlined" aria-hidden="true">point_of_sale</span>
+Ventas
+</button>
+<button type="button" class="eeff-tab" data-ref-tab="inventario" aria-pressed="false">
+<span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+Inventario
+</button>
+<button type="button" class="eeff-tab" data-ref-tab="pedidos" aria-pressed="false">
+<span class="material-symbols-outlined" aria-hidden="true">local_shipping</span>
+Pedidos
+</button>
+<button type="button" class="eeff-tab" data-ref-tab="pendientes" aria-pressed="false">
+<span class="material-symbols-outlined" aria-hidden="true">pending_actions</span>
+Pendientes
+</button>
+</nav>
+</section>
+
+<section id="refPanelVentas" class="refacciones-subpanel" data-ref-panel="ventas">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Ventas de refacciones</h3>
+<p class="section-subtitle">Contabilidad CON_CTAS 0481–0484 · margen y canales</p>
+<div id="kpiRefaccionesVentas" class="kpi-summary"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Por canal (0481–0484)</h3>
+<span id="refaccionesVentasCanalesMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Canal</th>
+<th class="cell-num">Ventas</th>
+<th class="cell-num">% del total</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesVentasCanales"></tbody>
+</table>
+</div>
+</section>
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Mostrador operativo</h3>
+<p class="section-subtitle">PAR_PEDMOST · pedidos del periodo (excluye cotizaciones)</p>
+<div id="kpiRefaccionesMostrador" class="kpi-summary"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Pedidos de mostrador</h3>
+<span id="refaccionesMostradorMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Fecha</th>
+<th>Status</th>
+<th>Cliente</th>
+<th>Almacén</th>
+<th class="cell-num">Neto</th>
+<th class="cell-num">IVA</th>
+<th class="cell-num">Total</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesMostrador"></tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section id="refPanelInventario" class="refacciones-subpanel hidden" data-ref-panel="inventario">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Existencias actuales</h3>
+<p class="section-subtitle">PAR_ALMACEN + PAR_PARTES · stock con existencia &gt; 0</p>
+<div id="kpiRefaccionesInventario" class="kpi-summary"></div>
+</section>
+<section class="section-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Traspasos entre almacenes</h3>
+<span id="refaccionesTraspasosMeta" class="top-bar-meta">Periodo consultado</span>
+</div>
+<p class="section-subtitle">Piezas que salen de un almacén hacia otro (obs. DE…A…)</p>
+<div id="kpiRefaccionesTraspasos" class="kpi-summary"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Rutas y detalle de traspasos</h3>
+</div>
+<div class="chart-grid" style="margin-bottom:12px">
+<div class="table-scroll" style="max-height:220px">
+<table class="data-table">
+<thead><tr><th>Ruta</th><th class="cell-num">Piezas</th><th class="cell-money">Costo</th></tr></thead>
+<tbody id="tblRefaccionesTraspasosRutas"></tbody>
+</table>
+</div>
+<div class="table-scroll" style="max-height:220px">
+<table class="data-table">
+<thead><tr><th>Parte</th><th>Descripción</th><th class="cell-num">Piezas</th></tr></thead>
+<tbody id="tblRefaccionesTraspasosTop"></tbody>
+</table>
+</div>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Parte</th>
+<th>Origen</th>
+<th>Destino</th>
+<th class="cell-num">Piezas</th>
+<th class="cell-money">Costo</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesTraspasosDetalle"></tbody>
+</table>
+</div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Top existencias por costo</h3>
+<span id="refaccionesInventarioMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Parte</th>
+<th>Descripción</th>
+<th>Almacén</th>
+<th>Grupo</th>
+<th>Línea</th>
+<th class="cell-num">Existencia</th>
+<th class="cell-num">Apartada</th>
+<th class="cell-num">Costo</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesInventario"></tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section id="refPanelPedidos" class="refacciones-subpanel hidden" data-ref-panel="pedidos">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Pedidos de refacciones</h3>
+<p class="section-subtitle">PAR_PEDIDO / PAR_PEDIDETA · compras a planta/proveedor</p>
+<div id="kpiRefaccionesPedidos" class="kpi-summary"></div>
+</section>
+<section class="section-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Alertas de inventario</h3>
+<span id="refaccionesAlertasMeta" class="top-bar-meta">Dinámicas según periodo y stock</span>
+</div>
+<p class="section-subtitle" style="margin-top:4px">Control de stock trabado · mejores ventas · mejor utilidad · compras pendientes</p>
+<div id="refaccionesAlertas" class="ref-alertas" aria-live="polite"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="ref-intel-grid">
+<div>
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Top vendidos</h3>
+<span class="top-bar-meta">Salidas del periodo</span>
+</div>
+<div class="table-scroll ref-intel-table">
+<table class="data-table">
+<thead>
+<tr>
+<th>Parte</th>
+<th>Descripción</th>
+<th class="cell-num">Cant.</th>
+<th class="cell-num">Venta</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesTopVendidos"></tbody>
+</table>
+</div>
+</div>
+<div>
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Mejor utilidad</h3>
+<span class="top-bar-meta">Margen por parte</span>
+</div>
+<div class="table-scroll ref-intel-table">
+<table class="data-table">
+<thead>
+<tr>
+<th>Parte</th>
+<th>Descripción</th>
+<th class="cell-num">Utilidad</th>
+<th class="cell-num">Margen</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesTopUtilidad"></tbody>
+</table>
+</div>
+</div>
+<div>
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Stock trabado</h3>
+<span class="top-bar-meta">≥ 90 días sin venta</span>
+</div>
+<div class="table-scroll ref-intel-table">
+<table class="data-table">
+<thead>
+<tr>
+<th>Parte</th>
+<th>Descripción</th>
+<th class="cell-num">Días</th>
+<th class="cell-num">Costo</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesStockTrabado"></tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Detalle de pedidos</h3>
+<span id="refaccionesPedidosMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Fecha</th>
+<th>Proveedor</th>
+<th>Status</th>
+<th>Tipo</th>
+<th class="cell-num">Líneas</th>
+<th class="cell-num">Pedida</th>
+<th class="cell-num">Surtida</th>
+<th class="cell-num">Pend.</th>
+<th class="cell-num">Importe</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesPedidos"></tbody>
+</table>
+</div>
+</section>
+</section>
+
+<section id="refPanelPendientes" class="refacciones-subpanel hidden" data-ref-panel="pendientes">
+<section class="section-panel dashboard-section">
+<h3 class="section-title">Pendientes de surtir / llegar</h3>
+<p class="section-subtitle">Pedidos abiertos con cantidad pedida &gt; surtida</p>
+<div id="kpiRefaccionesPendientes" class="kpi-summary"></div>
+</section>
+<section class="section-panel table-panel dashboard-section">
+<div class="table-header-row">
+<h3 class="section-title" style="margin-bottom:0">Pedidos pendientes</h3>
+<span id="refaccionesPendientesMeta" class="top-bar-meta">—</span>
+</div>
+<div class="table-scroll">
+<table class="data-table">
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Fecha</th>
+<th>Proveedor</th>
+<th>Status</th>
+<th>Tipo</th>
+<th class="cell-num">Líneas pend.</th>
+<th class="cell-num">Pedida</th>
+<th class="cell-num">Surtida</th>
+<th class="cell-num">Importe</th>
+</tr>
+</thead>
+<tbody id="tblRefaccionesPendientes"></tbody>
+</table>
+</div>
+</section>
+</section>
+</section>
+
+</div>
+</main>
+<script src="/js/auth-client.js"></script>
+<script src="/js/shared.js?v=5"></script>
+<script src="/js/postSalesOrderTypes.js?v=9"></script>
+<script src="/js/postSalesAnalytics.js?v=24"></script>
+<script src="/js/sidebar.js?v=11"></script>
+<script src="/js/topbar.js?v=18"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/kpi-insights.js?v=13"></script>
+<script src="/js/assistant-bubble.js?v=6"></script>
+<script src="/js/post-sales.js?v=90"></script>
+</body>
+</html>
