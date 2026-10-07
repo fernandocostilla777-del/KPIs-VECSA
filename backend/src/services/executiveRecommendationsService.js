@@ -636,7 +636,7 @@ function buildDirectivoInsights(payload = {}) {
         .map((r) => r.accion),
       metrics: { ritmo, senal: ritmo.senalPresion },
       chatPrompt: [
-        'Eres el analista de BALDERRAMA para dirección comercial.',
+        'Eres el analista de VECSA para dirección comercial.',
         'Hallazgo: ritmo / presión sobre la meta.',
         'Datos reales:',
         ...chatLines.map((l) => `- ${l}`),
@@ -660,7 +660,7 @@ function buildDirectivoInsights(payload = {}) {
       recommendations: funnel.cuellos.slice(0, 4).map((c) => c.accion),
       metrics: { cuellos: funnel.cuellos, ritmos: funnel.ritmos, conversiones: funnel.conversiones },
       chatPrompt: [
-        'Eres el analista de BALDERRAMA. Profundiza el cuello de botella del embudo comercial.',
+        'Eres el analista de VECSA. Profundiza el cuello de botella del embudo comercial.',
         'Datos reales:',
         ...chatLines.map((l) => `- ${l}`),
         'Explica la causa más probable y un plan de 7 días para dirección.',
@@ -685,7 +685,7 @@ function buildDirectivoInsights(payload = {}) {
         topVolumen: mix.topVolumen,
       },
       chatPrompt: [
-        'Eres el analista de BALDERRAMA. Evalúa si el mix actual puede llevar a la meta.',
+        'Eres el analista de VECSA. Evalúa si el mix actual puede llevar a la meta.',
         'Datos reales:',
         ...chatLines.map((l) => `- ${l}`),
         'Recomienda mix ideal (volumen vs HIGH END / utilidad) sin inventar cifras.',

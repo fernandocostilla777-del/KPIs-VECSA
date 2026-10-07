@@ -1,4 +1,4 @@
-# Documentación de avance — KPIs BALDERRAMA
+# Documentación de avance — KPIs VECSA
 
 > **Nota (1 oct 2026):** este documento está cortado en julio 2026. Para el estado actual ver [docs/ESTADO_Y_ENFOQUE.md](./docs/ESTADO_Y_ENFOQUE.md) y [docs/MAPA_VISUAL.md](./docs/MAPA_VISUAL.md).
 
@@ -71,7 +71,7 @@ Auth en `/api/auth/*`. Rutas de negocio en `backend/src/routes/api.js` (requiere
 | `GET /contabilidad` | Orquestador contable |
 | `GET /eeff` | EEFF + comparativa presupuesto 2026 |
 | `GET /forecast?horizon=` | Pronóstico (3–12 meses) |
-| `GET /crm/status` | Estado base interna CRM (Balderrama Ciclos) |
+| `GET /crm/status` | Estado base interna CRM (VECSA Ciclos) |
 | `GET /crm/contactos?q=` | Buscar cliente por ID CRM, nombre o VIN |
 | `GET /crm/contactos/:id/historico` | Histórico completo del cliente (ciclos, compras, actividades) |
 | `GET/POST /ai/*` | Asistente |
@@ -119,7 +119,7 @@ Auth en `/api/auth/*`. Rutas de negocio en `backend/src/routes/api.js` (requiere
 
 ### 4.5 Base interna CRM — histórico de clientes
 
-- Fuente: export del CRM `Balderrama Ciclos.csv` (~1,048,575 actividades · 78,061 contactos · 96,861 ciclos · 2018–2022+ con actividades hasta 2026).
+- Fuente: export del CRM `VECSA Ciclos.csv` (~1,048,575 actividades · 78,061 contactos · 96,861 ciclos · 2018–2022+ con actividades hasta 2026).
 - Clave de rastreo: **`ID_CONTACTO` = ID CRM**.
 - Carga: `node backend/scripts/etl-crm-ciclos.js "<ruta CSV>"` → SQLite `backend/data/crm-ciclos.db` (no versionada).
 - Servicio: `backend/src/services/crmCiclosService.js` — búsqueda (ID/nombre/VIN/teléfono/correo) e histórico.

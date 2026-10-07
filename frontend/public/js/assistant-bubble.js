@@ -22,7 +22,7 @@
       <div class="ai-chat-panel__title-wrap">
         <span class="material-symbols-outlined ai-chat-panel__logo">smart_toy</span>
         <div>
-          <h2 class="ai-chat-panel__title">Analista BALDERRAMA</h2>
+          <h2 class="ai-chat-panel__title">Analista VECSA</h2>
           <span class="ai-chat-panel__status" data-ai="status">Verificando…</span>
         </div>
       </div>

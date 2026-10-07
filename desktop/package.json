@@ -1,9 +1,9 @@
 {
-  "name": "kpis-balderrama-desktop",
+  "name": "kpis-vecsa-desktop",
   "version": "1.0.0",
-  "description": "KPIs Balderrama — aplicación de escritorio (Electron)",
+  "description": "KPIs VECSA — aplicación de escritorio (Electron)",
   "main": "main.js",
-  "author": "Balderrama",
+  "author": "VECSA",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {

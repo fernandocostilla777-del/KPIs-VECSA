@@ -32,8 +32,8 @@ export function LoginScreen({ onSuccess }: { onSuccess: (user: AuthUser) => void
         <div className="login-card">
           <div className="login-brand">
             <Image
-              src="/balderrama.png"
-              alt="BALDERRAMA"
+              src="/vecsa.png"
+              alt="VECSA"
               width={640}
               height={116}
               className="login-logo"

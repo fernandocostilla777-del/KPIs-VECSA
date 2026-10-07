@@ -1,6 +1,6 @@
 /**
  * Ciclos CRM en PostgreSQL (Railway).
- * Filas del export local (Balderrama Ciclos): un renglón = actividad.
+ * Filas del export local (VECSA Ciclos): un renglón = actividad.
  */
 const crypto = require('crypto');
 const { query, withTransaction } = require('../db');

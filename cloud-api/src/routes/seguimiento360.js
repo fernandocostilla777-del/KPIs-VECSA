@@ -19,7 +19,7 @@ router.get('/status', (_req, res) => {
   res.json({
     ok: true,
     formato: 'seguimiento-360-v1',
-    servicio: 'balderrama-cloud-api',
+    servicio: 'vecsa-cloud-api',
     capa: 'railway',
     endpoints: [
       'GET /api/seguimiento-360/status',

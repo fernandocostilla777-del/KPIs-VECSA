@@ -1,6 +1,6 @@
 # Seguimiento 360 — Especificación funcional (estado actual)
 
-Guía para replicar en otro proyecto el módulo **Seguimiento 360** tal como funciona hoy en el dashboard Balderrama (`frontend/public/seguimiento.html` + `js/seguimiento.js`, servicio `backend/src/services/crmCiclosService.js`).
+Guía para replicar en otro proyecto el módulo **Seguimiento 360** tal como funciona hoy en el dashboard VECSA (`frontend/public/seguimiento.html` + `js/seguimiento.js`, servicio `backend/src/services/crmCiclosService.js`).
 
 > Las secciones 1–6 describen lo que **ya está programado**. La sección 7 lista lo que está documentado como visión pero **aún no existe en código**.
 
@@ -164,7 +164,7 @@ Detalle completo en [`api-seguimiento-360.md`](./api-seguimiento-360.md).
 | Capa | Base | Auth | Alcance |
 |---|---|---|---|
 | Oficina | `http://localhost:3000` | Sesión dashboard (`Authorization: Bearer`) | Completo: CRM + DMS |
-| Railway | `https://kpis-balderrama-production.up.railway.app` | `X-API-Key` (solo servidor a servidor) | CRM sincronizado; sin taller, CSI ni unidades (`limitacionesNube`) |
+| Railway | `https://kpis-vecsa-production.up.railway.app` | `X-API-Key` (solo servidor a servidor) | CRM sincronizado; sin taller, CSI ni unidades (`limitacionesNube`) |
 
 ---
 

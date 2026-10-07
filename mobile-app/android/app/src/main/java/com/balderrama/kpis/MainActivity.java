@@ -1,4 +1,4 @@
-package com.balderrama.kpis;
+package com.vecsa.kpis;
 
 import com.getcapacitor.BridgeActivity;
 

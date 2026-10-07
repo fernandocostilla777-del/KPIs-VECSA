@@ -1,4 +1,4 @@
-# Base de datos analítica — KPIs BALDERRAMA
+# Base de datos analítica — KPIs VECSA
 
 Modelo dimensional para reporteo, ETL y configuración. **No reemplaza GMOFARRIL** (`CON_CTAS`, `CON_MOVDET`); actúa como capa de datos propia del dashboard.
 

@@ -19,8 +19,8 @@ function verifyPassword(password, stored) {
 }
 
 function getEncKey() {
-  const secret = process.env.AUTH_SECRET || 'cambiar-en-produccion-balderrama';
-  return crypto.scryptSync(secret, 'balderrama-pwd-reveal-v1', 32);
+  const secret = process.env.AUTH_SECRET || 'cambiar-en-produccion-vecsa';
+  return crypto.scryptSync(secret, 'vecsa-pwd-reveal-v1', 32);
 }
 
 /** Cifrado reversible solo para revelación por Administración. */

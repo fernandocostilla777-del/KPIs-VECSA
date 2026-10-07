@@ -66,8 +66,8 @@
     const brand = document.createElement('div');
     brand.className = 'top-bar-brand';
     brand.innerHTML = `
-      <a href="/" class="top-bar-logo-link" aria-label="BALDERRAMA — Inicio">
-        <img src="/img/image%20(1).png" alt="Chevrolet Balderrama" class="top-bar-logo">
+      <a href="/" class="top-bar-logo-link" aria-label="VECSA — Inicio">
+        <img src="/img/Imagen1.png?v=2" alt="Chevrolet VECSA" class="top-bar-logo">
       </a>
       <span class="top-bar-brand-accent" aria-hidden="true"></span>
     `;
@@ -84,7 +84,7 @@
 
     const eyebrow = document.createElement('span');
     eyebrow.className = 'top-bar-eyebrow';
-    eyebrow.textContent = 'Balderrama · Inteligencia de negocio';
+    eyebrow.textContent = 'VECSA · Inteligencia de negocio';
     textWrap.appendChild(eyebrow);
 
     if (titleEl) {
@@ -151,7 +151,7 @@
   }
 
   /* ── Centro de notificaciones (junto al perfil) ── */
-  const SEEN_KEY_PREFIX = 'balderrama_alerts_seen_v1:';
+  const SEEN_KEY_PREFIX = 'vecsa_alerts_seen_v1:';
   const POLL_MS = 60_000;
   let alertsUi = null;
   let notifBtn = null;
@@ -1478,7 +1478,7 @@
   };
 
   function themeToggleHtml() {
-    const Theme = window.BalderramaTheme;
+    const Theme = window.VECSATheme;
     const pref = Theme?.getPreference?.() || 'system';
     const prefs = Theme?.PREFS || ['system', 'light', 'dark'];
     const labels = Theme?.LABELS || { system: 'Sistema', light: 'Claro', dark: 'Oscuro' };
@@ -1504,7 +1504,7 @@
   }
 
   function bindThemeToggle(panel) {
-    const Theme = window.BalderramaTheme;
+    const Theme = window.VECSATheme;
     if (!Theme || !panel) return;
     panel.querySelectorAll('[data-theme-pref]').forEach((btn) => {
       btn.addEventListener('click', (e) => {

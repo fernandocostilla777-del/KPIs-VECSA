@@ -269,7 +269,7 @@ function buildAccionAgente(insight, catalogEntry) {
         ? `Definir ajuste operativo para ${kpiName}`
         : `Mantener control y monitorear ${kpiName}`,
     prompt: [
-      `Eres el agente analista de BALDERRAMA. El KPI «${kpiName}» ${tono}.`,
+      `Eres el agente analista de VECSA. El KPI «${kpiName}» ${tono}.`,
       catalogEntry?.clave ? `Clave catálogo ABP: ${catalogEntry.clave}.` : null,
       interpretacion ? `Interpretación del indicador: ${interpretacion}` : null,
       control ? `Valor de control (umbrales): ${control}` : null,

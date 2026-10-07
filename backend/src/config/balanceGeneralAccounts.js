@@ -1,5 +1,5 @@
 /**
- * Balance General — cuentas mayor (ACUM) definidas por listado Excel Balderrama.
+ * Balance General — cuentas mayor (ACUM) definidas por listado Excel VECSA.
  * Activo = circulante + fijo + diferido
  * Pasivo = circulante + largo plazo
  * Capital = cuentas 0360 / 0370 / 0385 / 0386 + Resultado del ejercicio (PyG YTD)

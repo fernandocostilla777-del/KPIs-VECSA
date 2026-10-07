@@ -1,4 +1,4 @@
-/* BALDERRAMA ? Modern soft UI theme */
+/* VECSA ? Modern soft UI theme */
 :root {
   --bg-gradient: linear-gradient(180deg, #F4F7FC 0%, #FFFFFF 100%);
   --text-primary: #2C3E50;
@@ -16980,7 +16980,7 @@ td.mono,
     flex-direction: column;
   }
 
-  /* Lista de precios m?vil: un solo Balderrama + mensajes/notif arriba a la derecha */
+  /* Lista de precios m?vil: un solo VECSA + mensajes/notif arriba a la derecha */
   body[data-page="lista-precios"] .top-bar--enhanced {
     flex-direction: row;
     flex-wrap: wrap;

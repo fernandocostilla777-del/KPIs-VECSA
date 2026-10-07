@@ -1,5 +1,5 @@
 /**
- * Utilidades compartidas para leer export Balderrama Ciclos (CSV / XLSX).
+ * Utilidades compartidas para leer export VECSA Ciclos (CSV / XLSX).
  */
 const fs = require('fs');
 const readline = require('readline');

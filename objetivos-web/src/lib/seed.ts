@@ -3,7 +3,7 @@ import type { MonthlyGoals } from "./types";
 export const AUGUST_2026_SEED: MonthlyGoals = {
   id: "2026-08",
   label: "Agosto 2026",
-  distribuidor: "323 Automotriz Balderrama Puebla",
+  distribuidor: "323 Automotriz VECSA Puebla",
   month: 8,
   year: 2026,
   importedAt: "2026-08-14T00:00:00.000Z",

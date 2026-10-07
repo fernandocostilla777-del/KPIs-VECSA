@@ -1,5 +1,5 @@
 /*
-  KPIs BALDERRAMA — Esquema analítico
+  KPIs VECSA — Esquema analítico
   Base de datos de reporteo / ETL (capa propia del dashboard)
   Compatible SQL Server 2012+
 */

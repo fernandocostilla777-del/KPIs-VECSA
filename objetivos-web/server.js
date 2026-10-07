@@ -8,7 +8,7 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '4173', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const CLOUD_API_URL = String(
-  process.env.CLOUD_API_URL || 'https://kpis-balderrama-production.up.railway.app'
+  process.env.CLOUD_API_URL || 'https://kpis-vecsa-production.up.railway.app'
 ).replace(/\/$/, '');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 

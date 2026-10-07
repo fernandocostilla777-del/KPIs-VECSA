@@ -1,6 +1,6 @@
-# BALDERRAMA — App móvil (Ionic + Capacitor)
+# VECSA — App móvil (Ionic + Capacitor)
 
-App móvil con diseño **Liquid Glass** basado en `stitch_liquid_glass_analytics/`, conectada directamente a BALDERRAMA Cloud API.
+App móvil con diseño **Liquid Glass** basado en `stitch_liquid_glass_analytics/`, conectada directamente a VECSA Cloud API.
 
 ## Pantallas
 
@@ -37,7 +37,7 @@ Edita `src/environments/environment.ts`:
 ```typescript
 export const environment = {
   production: false,
-  apiUrl: 'https://kpis-balderrama-production.up.railway.app',
+  apiUrl: 'https://kpis-vecsa-production.up.railway.app',
 };
 ```
 

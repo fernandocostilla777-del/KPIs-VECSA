@@ -4,7 +4,7 @@ Documentación de la API en la nube para **ciclos CRM** desplegada en Railway.
 
 | | |
 |---|---|
-| **Base URL** | `https://kpis-balderrama-production.up.railway.app` |
+| **Base URL** | `https://kpis-vecsa-production.up.railway.app` |
 | **Prefijo** | `/api/crm` |
 | **Auth** | Header `X-API-Key` (variable `CLOUD_SYNC_API_KEY`) |
 | **Fuente de datos** | PostgreSQL (`crm_ciclos`, `crm_contactos`) sincronizado desde la oficina |
@@ -21,7 +21,7 @@ Todas las rutas de lectura/escritura de ciclos requieren API key:
 X-API-Key: <CLOUD_SYNC_API_KEY>
 ```
 
-La clave debe coincidir con la configurada en el servicio Railway `KPIs-Balderrama`.
+La clave debe coincidir con la configurada en el servicio Railway `KPIs-VECSA`.
 
 ### Errores de auth
 
@@ -244,7 +244,7 @@ Si `replaceAll: true`, reemplaza el contenido completo antes de insertar.
 ## Ejemplos cURL
 
 ```bash
-export API=https://kpis-balderrama-production.up.railway.app
+export API=https://kpis-vecsa-production.up.railway.app
 export KEY="<CLOUD_SYNC_API_KEY>"
 
 # Embudo BDC septiembre 2026

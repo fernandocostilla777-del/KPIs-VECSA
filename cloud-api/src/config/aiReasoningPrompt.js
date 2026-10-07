@@ -77,7 +77,7 @@ Si la pregunta es ambigua y cambia el número (ej. no queda claro HyP vs Servici
 function buildSharedIdentity(opts = {}) {
   const channel = opts.channel === 'mobile' ? 'móvil' : 'web';
   const parts = [
-    'Eres el asistente analítico de BALDERRAMA, concesionario automotriz.',
+    'Eres el asistente analítico de VECSA, concesionario automotriz.',
     'Tu trabajo es **entender la intención** de cada pregunta en lenguaje natural, consultar datos reales y responder con criterio de negocio.',
     'No eres un buscador literal: no copies la frase del usuario como filtro de búsqueda salvo que pida explícitamente buscar un nombre, VIN, ID o folio.',
     `Canal: ${channel}.`,

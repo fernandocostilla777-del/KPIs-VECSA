@@ -2,7 +2,7 @@
  * Publica el instalador Windows y latest.yml en cloud-api.
  *
  * Uso (después de npm run dist:win):
- *   CLOUD_API_URL=https://kpis-balderrama-production.up.railway.app ^
+ *   CLOUD_API_URL=https://kpis-vecsa-production.up.railway.app ^
  *   CLOUD_SYNC_API_KEY=tu-clave ^
  *   node desktop/scripts/publish-update.js
  */
@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
-const API = String(process.env.CLOUD_API_URL || 'https://kpis-balderrama-production.up.railway.app').replace(/\/+$/, '');
+const API = String(process.env.CLOUD_API_URL || 'https://kpis-vecsa-production.up.railway.app').replace(/\/+$/, '');
 const KEY = String(process.env.CLOUD_SYNC_API_KEY || '').trim();
 
 function fail(message) {
@@ -29,7 +29,7 @@ if (!fs.existsSync(latestPath)) {
 const names = fs.readdirSync(DIST_DIR).filter((name) => (
   name === 'latest.yml'
   || name.endsWith('.blockmap')
-  || /^kpis-balderrama-setup-.*\.exe$/i.test(name)
+  || /^kpis-vecsa-setup-.*\.exe$/i.test(name)
   || /Setup-.*Windows.*\.exe$/i.test(name)
 ));
 

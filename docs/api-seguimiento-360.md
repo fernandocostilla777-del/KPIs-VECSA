@@ -23,8 +23,8 @@ Hay dos capas:
 
 | Capa | Base | Auth | Alcance |
 |------|------|------|---------|
-| **Oficina** (`backend`) | `http://localhost:3000` | Sesión dashboard (`balderrama_session` / Bearer) | Completo: CRM SQLite + DMS SQL Server |
-| **Railway** (`cloud-api`) | `https://kpis-balderrama-production.up.railway.app` | Header `X-API-Key` | Resumen sync + expediente ligero desde `crm_ciclos` |
+| **Oficina** (`backend`) | `http://localhost:3000` | Sesión dashboard (`vecsa_session` / Bearer) | Completo: CRM SQLite + DMS SQL Server |
+| **Railway** (`cloud-api`) | `https://kpis-vecsa-production.up.railway.app` | Header `X-API-Key` | Resumen sync + expediente ligero desde `crm_ciclos` |
 
 Prefijo en ambas: **`/api/seguimiento-360`**
 
@@ -38,7 +38,7 @@ Formato de respuesta: `formato: "seguimiento-360-v1"`.
 
 ### Oficina (local)
 
-Misma sesión del dashboard Balderrama. Cookie `balderrama_session` o header:
+Misma sesión del dashboard VECSA. Cookie `vecsa_session` o header:
 
 ```http
 Authorization: Bearer <token>
@@ -155,7 +155,7 @@ Clientes con órdenes **cerradas** en el periodo (`ORE_FECHACIE`).
 
 ## Endpoints — Railway
 
-Base: `https://kpis-balderrama-production.up.railway.app`
+Base: `https://kpis-vecsa-production.up.railway.app`
 
 ### 1. Estado
 
@@ -172,7 +172,7 @@ GET /api/seguimiento-360/resumen?periodo=2026-09
 Lee el snapshot de sync (`domain=crm` → `meta.seguimiento`) más totales de `crm_ciclos`.
 
 ```bash
-export API=https://kpis-balderrama-production.up.railway.app
+export API=https://kpis-vecsa-production.up.railway.app
 export KEY="$CLOUD_SYNC_API_KEY"
 
 curl -s -H "X-API-Key: $KEY" \

@@ -1,4 +1,4 @@
-# KPIs Balderrama — Desktop (Electron)
+# KPIs VECSA — Desktop (Electron)
 
 Aplicación de escritorio para Windows y Mac. Arranca el **backend** y el **frontend** locales y abre el dashboard en una ventana nativa.
 
@@ -56,14 +56,14 @@ Salida en `desktop/dist/`.
 
 El instalador NSIS busca solo nuevas versiones en:
 
-`https://kpis-balderrama-production.up.railway.app/desktop-updates`
+`https://kpis-vecsa-production.up.railway.app/desktop-updates`
 
 1. Sube la versión en `desktop/package.json` (por ejemplo `1.0.1`).
 2. Genera el instalador: `npm run dist:win`
 3. Publícalo a Railway:
 
 ```bash
-set CLOUD_API_URL=https://kpis-balderrama-production.up.railway.app
+set CLOUD_API_URL=https://kpis-vecsa-production.up.railway.app
 set CLOUD_SYNC_API_KEY=tu-clave
 npm run publish:win
 ```

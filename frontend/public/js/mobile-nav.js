@@ -9,7 +9,7 @@
   btn.className = 'mobile-menu-btn';
   btn.setAttribute('aria-label', 'Abrir menú de navegación');
   btn.setAttribute('aria-expanded', 'false');
-  btn.innerHTML = '<img src="/img/image%20(1).png" alt="" class="sidebar-logo mobile-menu-btn-logo" aria-hidden="true">';
+  btn.innerHTML = '<img src="/img/Imagen1.png?v=2" alt="" class="sidebar-logo mobile-menu-btn-logo" aria-hidden="true">';
 
   const overlay = document.createElement('div');
   overlay.className = 'sidebar-overlay hidden';

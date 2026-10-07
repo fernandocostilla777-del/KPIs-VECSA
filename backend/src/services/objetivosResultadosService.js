@@ -21,7 +21,7 @@ const EJECUTIVOS_ACTIVOS_NUEVOS = 31;
 
 /** Metas de referencia del PDF Agosto 2026 (plantilla del formato). */
 const METAS_AGOSTO_2026 = {
-  distribuidor: '323 Automotriz Balderrama Puebla',
+  distribuidor: '323 Automotriz VECSA Puebla',
   mes: 8,
   anio: 2026,
   label: 'Agosto 2026',
@@ -561,7 +561,7 @@ function isVendedorCasa({ id = '', nombre = '' } = {}) {
   const up = normalizePersonName(nombre);
   if (!up) return false;
   if (/\bCASA\b/.test(up)) return true;
-  if (/\bINTERCAMBIOS\b/.test(up) && /\bBALDERRAMA\b/.test(up)) return true;
+  if (/\bINTERCAMBIOS\b/.test(up) && /\bVECSA\b/.test(up)) return true;
   return false;
 }
 

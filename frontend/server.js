@@ -29,7 +29,7 @@ function getLanAddresses() {
 function printStartupUrls() {
   const preferred = LAN_IP || getLanAddresses()[0] || 'localhost';
   console.log('');
-  console.log('  BALDERRAMA — Frontend');
+  console.log('  VECSA — Frontend');
   console.log(`  → Local:    http://localhost:${PORT}`);
   console.log(`  → Red LAN:  http://${preferred}:${PORT}`);
   getLanAddresses().filter((ip) => ip !== preferred).forEach((ip) => {
@@ -63,6 +63,11 @@ app.use(createProxyMiddleware({
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
+// Módulo lista de precios deshabilitado temporalmente
+app.get(['/lista-precios', '/lista-precios.html'], (_req, res) => {
+  res.redirect(302, '/');
 });
 
 app.use(express.static(PUBLIC_DIR, {

@@ -1,5 +1,5 @@
 /**
- * Ingesta incremental Balderrama Ciclos → Railway + SQLite local.
+ * Ingesta incremental VECSA Ciclos → Railway + SQLite local.
  *
  * - Railway (crm_ciclos): fuente operativa del embudo BDC
  * - SQLite (crm_actividades): histórico local en crecimiento (sin DROP TABLE)

@@ -1,6 +1,6 @@
 /**
  * Mapeo del catálogo contable — Nivel Mayor (Balanza de Comprobación).
- * Fuente: Total de cuentas.xlsx + instrucción EEFF Balderrama.
+ * Fuente: Total de cuentas.xlsx + instrucción EEFF VECSA.
  */
 
 /** Ingresos: saldos acreedores (créditos) — grupo 0400 y complementos */

@@ -180,7 +180,7 @@ function main() {
     margins: { top: 42, bottom: 42, left: 42, right: 42 },
     info: {
       Title: 'Compras a planta GM — últimos 6 meses',
-      Author: 'Dashboard Balderrama',
+      Author: 'Dashboard VECSA',
       Subject: 'PAR_MOVTOS tipo 01-51 · GENERAL MOTORS DE MEXICO',
     },
   });
@@ -319,7 +319,7 @@ function main() {
 
   doc.moveDown(1);
   doc.font('Helvetica').fontSize(7.5).fillColor('#94A3B8')
-    .text('Fuente: PAR_MOVTOS + PAR_MOVDET · Mov_Idpersona = 2 · Dashboard Balderrama KPIs');
+    .text('Fuente: PAR_MOVTOS + PAR_MOVDET · Mov_Idpersona = 2 · Dashboard VECSA KPIs');
 
   doc.end();
   stream.on('finish', () => console.log('PDF generado:', OUT));

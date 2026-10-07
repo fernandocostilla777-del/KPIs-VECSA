@@ -1,9 +1,9 @@
 # Documentación de migración de base de datos
 
-Guía para migrar **KPIs BALDERRAMA** a otra base de datos (por ejemplo PostgreSQL, MySQL u otro SQL Server).
+Guía para migrar **KPIs VECSA** a otra base de datos (por ejemplo PostgreSQL, MySQL u otro SQL Server).
 
 Última actualización: 2026-07-30  
-Repositorio: [KPIs-Balderrama](https://github.com/fernandocostilla777-del/KPIs-Balderrama)
+Repositorio: [KPIs-VECSA](https://github.com/fernandocostilla777-del/KPIs-VECSA)
 
 ---
 
@@ -140,7 +140,7 @@ ADE_VTAFI ↔ SOF_Venta_Cancel_DEMO (entregas; SOF_Factura = VTE_DOCTO)
 
 | Tabla | Script ETL | Origen |
 |-------|------------|--------|
-| `crm_actividades` | `backend/scripts/etl-crm-ciclos.js` | CSV/XLSX Balderrama Ciclos |
+| `crm_actividades` | `backend/scripts/etl-crm-ciclos.js` | CSV/XLSX VECSA Ciclos |
 | `crm_leads` | `etl-crm-leads.js` | Google Sheet → `leads-source.xlsx` |
 | `crm_solicitudes` | `etl-crm-solicitudes.js` | hoja solicitudes |
 | `crm_pruebas_manejo` | `etl-crm-pruebas-manejo.js` | hoja pruebas |

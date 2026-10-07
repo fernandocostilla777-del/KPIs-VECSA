@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const COOKIE_NAME = 'balderrama_session';
+const COOKIE_NAME = 'vecsa_session';
 const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 function isAuthEnabled() {
@@ -8,7 +8,7 @@ function isAuthEnabled() {
 }
 
 function getSecret() {
-  return process.env.AUTH_SECRET || 'cambiar-en-produccion-balderrama';
+  return process.env.AUTH_SECRET || 'cambiar-en-produccion-vecsa';
 }
 
 function sign(payload) {
@@ -62,7 +62,7 @@ function readSession(req) {
     return { username: 'dev', role: 'direccion', devBypass: true };
   }
   const cookies = parseCookies(req.headers.cookie);
-  return verify(cookies[COOKIE_NAME]);
+  return verify(cookies[COOKIE_NAME] || cookies['balderrama_session']);
 }
 
 function setSessionCookie(res, token) {

@@ -1,6 +1,6 @@
-appId: com.balderrama.kpis
-productName: KPIs Balderrama
-copyright: Copyright © Balderrama
+appId: com.vecsa.kpis
+productName: KPIs VECSA
+copyright: Copyright © VECSA
 
 directories:
   output: dist
@@ -16,7 +16,7 @@ files:
 
 publish:
   provider: generic
-  url: https://kpis-balderrama-production.up.railway.app/desktop-updates
+  url: https://kpis-vecsa-production.up.railway.app/desktop-updates
 
 # node_modules debe ir en entradas aparte: electron-builder a veces
 # omite node_modules al copiar carpetas padre con filter.
@@ -26,7 +26,7 @@ extraResources:
     filter:
       - "**/*"
       - "!**/node_modules/**"
-      # Incluir .env en builds internos (misma máquina / red Balderrama).
+      # Incluir .env en builds internos (misma máquina / red VECSA).
       # Si se distribuye fuera, quitar el .env del paquete y usar solo userData.
       - "!**/data/*.db-wal"
       - "!**/data/*.db-shm"
@@ -62,8 +62,8 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: KPIs Balderrama
-  artifactName: "kpis-balderrama-setup-${version}-win-${arch}.${ext}"
+  shortcutName: KPIs VECSA
+  artifactName: "kpis-vecsa-setup-${version}-win-${arch}.${ext}"
 
 portable:
   artifactName: "${productName}-Portable-${version}-Windows-${arch}.${ext}"
@@ -84,7 +84,7 @@ mac:
   identity: null
 
 dmg:
-  title: KPIs Balderrama
+  title: KPIs VECSA
   icon: assets/icon.icns
   contents:
     - x: 130

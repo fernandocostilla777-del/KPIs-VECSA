@@ -1,4 +1,4 @@
--- BALDERRAMA Cloud Sync — PostgreSQL
+-- VECSA Cloud Sync — PostgreSQL
 -- Ejecutar una vez al desplegar: npm run init-db
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -86,7 +86,7 @@ CREATE INDEX IF NOT EXISTS idx_dms_personal_categoria ON dms_personal (categoria
 CREATE INDEX IF NOT EXISTS idx_dms_personal_nombre ON dms_personal (nombre);
 CREATE INDEX IF NOT EXISTS idx_dms_personal_subtipo ON dms_personal (subtipo);
 
--- Ciclos CRM (export Balderrama Ciclos / actividades)
+-- Ciclos CRM (export VECSA Ciclos / actividades)
 CREATE TABLE IF NOT EXISTS crm_ciclos (
   id                      BIGSERIAL PRIMARY KEY,
   row_key                 CHAR(64)     NOT NULL UNIQUE,

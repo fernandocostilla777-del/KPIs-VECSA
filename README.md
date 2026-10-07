@@ -1,4 +1,4 @@
-# KPIs BALDERRAMA
+# KPIs VECSA
 
 Dashboard ejecutivo conectado a SQL Server (GMOFARRIL): ventas, contabilidad, inventario, post-venta y pronóstico.
 
@@ -37,8 +37,8 @@ Dashboard ejecutivo conectado a SQL Server (GMOFARRIL): ventas, contabilidad, in
 ## Instalación
 
 ```bash
-git clone https://github.com/fernandocostilla777-del/KPIs-Balderrama.git
-cd KPIs-Balderrama
+git clone https://github.com/fernandocostilla777-del/KPIs-VECSA.git
+cd KPIs-VECSA
 npm run install:all
 copy backend\.env.example backend\.env
 ```

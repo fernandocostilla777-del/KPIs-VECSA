@@ -57,10 +57,10 @@ function buildOpenApiSpec({ port = 3000, lanIp = null } = {}) {
   return {
     openapi: '3.0.3',
     info: {
-      title: 'BALDERRAMA Dashboard API',
+      title: 'VECSA Dashboard API',
       version: '1.0.0',
       description:
-        'API REST del dashboard BALDERRAMA. La autenticación usa la cookie de sesión '
+        'API REST del dashboard VECSA. La autenticación usa la cookie de sesión '
         + 'creada por POST /api/auth/login. Los permisos dependen del rol.',
     },
     servers,
@@ -83,7 +83,7 @@ function buildOpenApiSpec({ port = 3000, lanIp = null } = {}) {
         cookieAuth: {
           type: 'apiKey',
           in: 'cookie',
-          name: 'balderrama_session',
+          name: 'vecsa_session',
           description: 'Cookie HttpOnly creada al iniciar sesión.',
         },
       },

@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Objetivos mensuales | Balderrama",
+  title: "Objetivos mensuales | VECSA",
   description: "Objetivos y resultados comerciales importados desde PDF",
 };
 

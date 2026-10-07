@@ -32,7 +32,7 @@ function getLanAddresses() {
 function printStartupUrls() {
   const preferred = LAN_IP || getLanAddresses()[0] || 'localhost';
   console.log('');
-  console.log('  BALDERRAMA — Backend API');
+  console.log('  VECSA — Backend API');
   console.log(`  → API local:  http://localhost:${PORT}/api`);
   console.log(`  → API LAN:    http://${preferred}:${PORT}/api`);
   console.log(`  → Frontend:   ${FRONTEND_URL}`);
@@ -71,7 +71,7 @@ app.use(express.json());
 app.use(attachSession);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'balderrama-backend' });
+  res.json({ ok: true, service: 'vecsa-backend' });
 });
 
 app.get('/api/openapi.json', (_req, res) => {
@@ -85,7 +85,7 @@ app.get(['/api/docs', '/api/docs/'], (_req, res) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BALDERRAMA API</title>
+  <title>VECSA API</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
   <style>
     body { margin: 0; background: #f6f8fb; }

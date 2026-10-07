@@ -1,5 +1,5 @@
 /**
- * Segmento comercial HIGH END (canal de lujo Balderrama).
+ * Segmento comercial HIGH END (canal de lujo VECSA).
  * No es forma de pago: se define por carline / modelo.
  */
 const HIGH_END_CARLINES = ['SUBURBAN', 'TAHOE', 'CHEYENNE', 'TRAVERSE'];

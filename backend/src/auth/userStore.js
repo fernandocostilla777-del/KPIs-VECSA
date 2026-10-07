@@ -8,12 +8,12 @@ const USERS_FILE = path.join(__dirname, '../../data/users.json');
 const SEED_USERS = [
   { username: 'admin', password: 'Admin2026!', role: 'administracion' },
   { username: 'direccion', password: 'Direccion2026!', role: 'direccion' },
-  { username: 'gerente.general', password: 'GgBalderrama2026!', role: 'direccion' },
+  { username: 'gerente.general', password: 'GgVECSA2026!', role: 'direccion' },
   { username: 'gerencia', password: 'Comercial2026!', role: 'gerencia_comercial' },
   { username: 'comercial', password: 'Comercial2026!', role: 'gerencia_comercial' },
   { username: 'contabilidad', password: 'Conta2026!', role: 'contabilidad' },
   { username: 'contraloria', password: 'Contraloria2026!', role: 'contabilidad' },
-  { username: 'mtk', password: 'MtkBalderrama2026!', role: 'marketing' },
+  { username: 'mtk', password: 'MtkVECSA2026!', role: 'marketing' },
   { username: 'inventario', password: 'Inventario2026!', role: 'gestion_inventario' },
 ];
 

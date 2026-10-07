@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Objetivos | BALDERRAMA</title>
+<title>Objetivos | VECSA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -88,7 +88,7 @@
 <body>
 <div id="viewLogin" class="wrap">
   <form class="card login" id="loginForm">
-    <div class="brand">Balderrama</div>
+    <div class="brand">VECSA</div>
     <h1>Objetivos</h1>
     <p class="sub">Dashboard de producción · facturas GMMX y entregas SOFIA</p>
     <label for="username">Usuario</label>
@@ -103,7 +103,7 @@
 <div id="viewDash" class="wrap hidden">
   <div class="top">
     <div>
-      <div class="brand">Balderrama</div>
+      <div class="brand">VECSA</div>
       <h1>Objetivos del periodo</h1>
       <p class="sub" id="periodLabel">—</p>
     </div>
@@ -277,7 +277,7 @@ function buildPdfHtml(data) {
     <article style="width:794px;padding:36px 40px;background:#fff;color:#1e293b;font-family:Inter,sans-serif">
       <header style="display:flex;justify-content:space-between;border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:22px">
         <div>
-          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#2d5bff">BALDERRAMA</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#2d5bff">VECSA</div>
           <h1 style="margin:6px 0 4px;font-size:24px">Reporte de objetivos</h1>
           <p style="margin:0;color:#64748b;font-size:13px">${monthLabel(data.periodKey)}</p>
         </div>
@@ -303,7 +303,7 @@ function buildPdfHtml(data) {
         <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px"><span style="font-size:10px;font-weight:800;color:#94a3b8">SIN TIMBRAR</span><strong style="display:block;font-size:20px">${Number(sofia.sinTimbrar || 0)}</strong></div>
       </section>
       <p style="font-size:11px;color:#64748b">Cobertura = (SOFIA ${sofiaActual} + sin timbrar ${Number(sofia.sinTimbrar || 0)}) / objetivo ${sofiaGoal || '—'}.</p>
-      <footer style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:12px;font-size:10px;color:#94a3b8">KPIs Balderrama · objetivos-web · uso interno</footer>
+      <footer style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:12px;font-size:10px;color:#94a3b8">KPIs VECSA · objetivos-web · uso interno</footer>
     </article>`;
 }
 

@@ -13,8 +13,8 @@ export function isAdministrator(user: AuthUser | null | undefined): boolean {
   return role === "administracion" || role === "admin" || user.canManageUsers === true;
 }
 
-const TOKEN_KEY = "balderrama_objetivos_token";
-const USER_KEY = "balderrama_objetivos_user";
+const TOKEN_KEY = "vecsa_objetivos_token";
+const USER_KEY = "vecsa_objetivos_user";
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;

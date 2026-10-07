@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ETL contable BALDERRAMA — Procesos A-D
+ETL contable VECSA — Procesos A-D
 Extrae de CON_CTAS, aísla gasto admin, prorratea y consolida por centro de costo.
 
 Uso:
@@ -148,7 +148,7 @@ def consolidate(rows, prorated):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ETL contable BALDERRAMA")
+    parser = argparse.ArgumentParser(description="ETL contable VECSA")
     parser.add_argument("--inicio", required=True, help="YYYY-MM-DD")
     parser.add_argument("--fin", required=True, help="YYYY-MM-DD")
     parser.add_argument("--output", help="Ruta JSON de salida")

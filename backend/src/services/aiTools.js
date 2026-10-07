@@ -505,7 +505,7 @@ const TOOL_DEFINITIONS = [
     function: {
       name: 'buscar_cliente_crm',
       description:
-        'Busca clientes en Seguimiento 360: Balderrama Ciclos (fuente maestra), leads, solicitudes F&I y pruebas de manejo. '
+        'Busca clientes en Seguimiento 360: VECSA Ciclos (fuente maestra), leads, solicitudes F&I y pruebas de manejo. '
         + 'Busca por ID CRM '
         + '(ID_CONTACTO), nombre parcial, VIN, teléfono o correo. Devuelve id_contacto, nombre, número de ciclos, '
         + 'actividades, compras, leads, solicitudes y pruebas de manejo. Úsala primero cuando pregunten por un cliente y no tengas su ID.',

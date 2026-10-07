@@ -16,14 +16,14 @@ En la PC de desarrollo se generaron (o se pueden regenerar):
 ### En el servidor
 
 1. Instalar **Node.js 18+** (LTS).
-2. Descomprimir `dashboard-deploy.zip` en una carpeta fija, p. ej. `C:\Apps\KPIs-Balderrama`.
+2. Descomprimir `dashboard-deploy.zip` en una carpeta fija, p. ej. `C:\Apps\KPIs-VECSA`.
 3. Descomprimir `dashboard-data.zip` dentro de `backend\data`.
 4. Copiar `backend\.env` (credenciales SQL, auth, etc.) — **no va en el zip**.
 5. Verificar que el servidor tenga **acceso de red a SQL Server** (`DB_HOST:1433`).
 6. Instalar dependencias y arrancar:
 
 ```powershell
-cd C:\Apps\KPIs-Balderrama
+cd C:\Apps\KPIs-VECSA
 npm run install:all
 npm start
 ```

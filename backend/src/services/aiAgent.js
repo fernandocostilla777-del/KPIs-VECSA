@@ -46,7 +46,7 @@ const WEB_MODULE_RULES = `
 - SQL exploratorio solo si nada más cubre la pregunta
 
 ## HIGH END (obligatorio)
-- HIGH END = **canal de lujo** Balderrama (NO es forma de pago).
+- HIGH END = **canal de lujo** VECSA (NO es forma de pago).
 - Carlines: **SUBURBAN, TAHOE, CHEYENNE, TRAVERSE**.
 - Preguntas de HIGH END / lujo → consultar_ventas_modelo con modelo="HIGH END".
 

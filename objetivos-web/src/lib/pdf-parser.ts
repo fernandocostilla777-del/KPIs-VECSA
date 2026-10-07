@@ -329,7 +329,7 @@ export function parseObjectivesText(text: string, sourceFile: string): MonthlyGo
     label: period.label,
     distribuidor:
       firstMatch(normalized, /\b(\d{3}\s+AUTOMOTRIZ[^\n]+)/i) ||
-      "Automotriz Balderrama Puebla",
+      "Automotriz VECSA Puebla",
     month: period.month,
     year: period.year,
     importedAt: new Date().toISOString(),

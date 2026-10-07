@@ -31,7 +31,7 @@ function expectedPacePct(fechaInicio, fechaFin) {
 
 function chatPrompt(module, title, contextLines, ask) {
   return [
-    `Eres el analista de BALDERRAMA. Profundiza esta alerta del módulo ${module}.`,
+    `Eres el analista de VECSA. Profundiza esta alerta del módulo ${module}.`,
     `Hallazgo (posible falla operativa/comercial): ${title}`,
     'Datos reales del sistema / base de datos:',
     ...contextLines.map((l) => `- ${l}`),

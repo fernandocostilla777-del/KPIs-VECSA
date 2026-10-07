@@ -5,7 +5,7 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const DEFAULT_FEED_URL = 'https://kpis-balderrama-production.up.railway.app/desktop-updates';
+const DEFAULT_FEED_URL = 'https://kpis-vecsa-production.up.railway.app/desktop-updates';
 
 let getMainWindow = () => null;
 let checking = false;
@@ -99,7 +99,7 @@ function showOsNotification(status) {
   try {
     if (!Notification.isSupported()) return;
     const n = new Notification({
-      title: 'KPIs Balderrama',
+      title: 'KPIs VECSA',
       body: `Hay una actualización disponible (${status.latest}). Revísela en Notificaciones.`,
     });
     n.on('click', () => {

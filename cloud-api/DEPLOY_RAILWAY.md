@@ -1,8 +1,8 @@
-# Despliegue en Railway — BALDERRAMA Cloud API
+# Despliegue en Railway — VECSA Cloud API
 
 Guía paso a paso para montar la **versión intermedia en la nube**: solo la API de sincronización y PostgreSQL. El dashboard completo (`backend/` + `frontend/`) permanece en el servidor local de la oficina.
 
-**Repositorio:** https://github.com/fernandocostilla777-del/KPIs-Balderrama
+**Repositorio:** https://github.com/fernandocostilla777-del/KPIs-VECSA
 
 ---
 
@@ -34,7 +34,7 @@ SQL Server GMOFARRIL                   (solo datos enviados)
 ## 2. Requisitos previos
 
 - Cuenta en [Railway](https://railway.app)
-- Repositorio conectado: `fernandocostilla777-del/KPIs-Balderrama`
+- Repositorio conectado: `fernandocostilla777-del/KPIs-VECSA`
 - Rama `main` actualizada (carpeta `cloud-api/` visible en el repo)
 - Backend local configurado para enviar datos (sección 8)
 
@@ -44,7 +44,7 @@ SQL Server GMOFARRIL                   (solo datos enviados)
 
 1. Entra a [railway.app](https://railway.app) → **New Project**.
 2. Elige **Deploy from GitHub repo**.
-3. Selecciona **KPIs-Balderrama**.
+3. Selecciona **KPIs-VECSA**.
 4. Railway creará un primer servicio web. Lo configurarás en el paso 5.
 
 ---
@@ -175,7 +175,7 @@ curl https://TU-URL.up.railway.app/api/health
 Respuesta esperada:
 
 ```json
-{ "ok": true, "service": "balderrama-cloud-api" }
+{ "ok": true, "service": "vecsa-cloud-api" }
 ```
 
 ### Comprobar autenticación (status)
@@ -313,7 +313,7 @@ Railway PostgreSQL usa SSL. El cliente en `cloud-api/src/db.js` ya configura `ss
 ## 12. Resumen visual del proyecto Railway
 
 ```
-Proyecto: KPIs-Balderrama
+Proyecto: KPIs-VECSA
 │
 ├── PostgreSQL          (plugin base de datos)
 │

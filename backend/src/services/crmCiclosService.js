@@ -29,7 +29,7 @@ function getDb() {
   if (db) return db;
   if (!fs.existsSync(DB_PATH)) {
     throw new Error(
-      'Base CRM no encontrada. Ejecute: node backend/scripts/etl-crm-ciclos.js "<ruta al XLSX/CSV Balderrama Ciclos>"'
+      'Base CRM no encontrada. Ejecute: node backend/scripts/etl-crm-ciclos.js "<ruta al XLSX/CSV VECSA Ciclos>"'
     );
   }
   db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
@@ -1594,7 +1594,7 @@ async function enrichByVinsUncached(list, { maxOrdenes, fechaInicio, fechaFin })
 
 /**
  * Obtiene todas las unidades que han generado órdenes a nombre del cliente en el DMS,
- * aunque el VIN no exista en la columna T de Balderrama Ciclos.
+ * aunque el VIN no exista en la columna T de VECSA Ciclos.
  * El match final exige nombre normalizado exacto o teléfono exacto para evitar homónimos.
  */
 async function getCustomerUnitsDms({ nombre, telefono, maxOrdenes = 5000 } = {}) {
@@ -2914,7 +2914,7 @@ async function getCierresTallerPeriodo({ fechaInicio, fechaFin, limit = 200 } = 
       AND CONVERT(DATE, o.ORE_FECHACIE, 103) <= @fechaFin
       AND o.ORE_STATUS <> 'C'
       AND UPPER(ISNULL(c.PER_NOMRAZON, '') + ' ' + ISNULL(c.PER_PATERNO, '') + ' ' + ISNULL(c.PER_MATERNO, ''))
-        NOT LIKE '%AUTOMOTRIZ%BALDERRAMA%PUEBLA%'
+        NOT LIKE '%AUTOMOTRIZ%VECSA%PUEBLA%'
     ORDER BY CONVERT(DATE, o.ORE_FECHACIE, 103) DESC
   `, { fechaInicio, fechaFin }));
 
@@ -2952,7 +2952,7 @@ async function getCierresTallerPeriodo({ fechaInicio, fechaFin, limit = 200 } = 
   }
 
   // Respaldo: si la serie del taller no está en la col T del CRM,
-  // usar la base Balderrama Ciclos (y leads/solicitudes/pruebas) por nombre o teléfono.
+  // usar la base VECSA Ciclos (y leads/solicitudes/pruebas) por nombre o teléfono.
   for (const cli of clientes.values()) {
     if (cli.idCrm) continue;
     cli.idCrm = resolveIdCrmByNombre(cli.cliente)
@@ -4224,7 +4224,7 @@ function getLeadsDashboard({ fechaInicio = null, fechaFin = null, limit = 400 } 
       fechaFin: rango.hasta,
       periodo: rango.periodo,
     },
-    fuente: 'crm_leads · crm_actividades (Balderrama Ciclos)',
+    fuente: 'crm_leads · crm_actividades (VECSA Ciclos)',
     reglaCompra: `Serie/VIN en ciclo CRM del mismo ID CRM (o vin_comprado), con fecha de compra ≥ fecha_entrada y dentro de ${LEAD_VIDA_DIAS} días; la conversión se atribuye al mes de origen del lead`,
     cobertura,
     semantica: {
@@ -4393,7 +4393,7 @@ function getSeguimiento360Summary({ periodo = null, desde = null, hasta = null }
   );
 
   return {
-    fuenteMaestra: 'Balderrama Ciclos (ID_CONTACTO = ID CRM)',
+    fuenteMaestra: 'VECSA Ciclos (ID_CONTACTO = ID CRM)',
     periodo: rango,
     leads,
     solicitudes,
@@ -4411,7 +4411,7 @@ function getSeguimiento360Summary({ periodo = null, desde = null, hasta = null }
       ventasTotalesDms: 'No incluidas; deben consultarse por separado para una comparación de volumen',
     },
     reglas: {
-      compraCiclo: 'VIN asignado en columna T de Balderrama Ciclos',
+      compraCiclo: 'VIN asignado en columna T de VECSA Ciclos',
       idLead: 'columna G = ID CRM',
       idSolicitud: 'columna H = ID CRM',
       idPruebaManejo: 'columna P = ID CRM',
@@ -5788,7 +5788,7 @@ function pctBdc(part, total) {
 }
 
 /**
- * Embudo BDC sobre crm_actividades + crm_leads (histórico local Balderrama Ciclos).
+ * Embudo BDC sobre crm_actividades + crm_leads (histórico local VECSA Ciclos).
  * Contactos = unión de:
  *  - contactos con ciclo iniciado en el periodo
  *  - leads no duplicados con ejecutivo de ventas asignado (cartera EV)
@@ -7483,7 +7483,7 @@ function getTiempoMaduracion({ fechaInicio = null, fechaFin = null } = {}) {
       metodologia: {
         llegada: 'Primera huella del cliente en CRM (lead, ciclo, actividad, prueba de manejo o solicitud) posterior a su compra anterior. Un ciclo descartado, caducado, perdido, diferido o que se quedó en prospección sin seguimiento posterior no cuenta como llegada.',
         venta: 'Fecha de factura del ciclo; compras separadas por 7 días o menos cuentan como una sola venta.',
-        origen: 'Cartera = compra previa en Balderrama dentro de 48 meses; Lead = registro en STREGA sin compra previa; el resto queda sin clasificar.',
+        origen: 'Cartera = compra previa en VECSA dentro de 48 meses; Lead = registro en STREGA sin compra previa; el resto queda sin clasificar.',
         cobertura: 'Ventas esperadas = suma de la probabilidad histórica de compra de cada prospecto activo según su edad, en los días que faltan del periodo. Objetivo = meta retail del mes en Ventas.',
         semaforo: 'Sin meta ni semáforo por definición del catálogo; la cobertura se lee contra 100%.',
       },

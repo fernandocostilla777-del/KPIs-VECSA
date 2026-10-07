@@ -8,7 +8,7 @@ async function main() {
   const fechaFin = process.argv[3] || '2026-06-30';
 
   console.log('');
-  console.log('=== Prueba ETL Contable BALDERRAMA ===');
+  console.log('=== Prueba ETL Contable VECSA ===');
   console.log(`Periodo: ${fechaInicio} → ${fechaFin}`);
   console.log('');
 

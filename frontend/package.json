@@ -1,7 +1,7 @@
 {
-  "name": "kpis-balderrama-frontend",
+  "name": "kpis-vecsa-frontend",
   "version": "1.0.0",
-  "description": "Interfaz web — Dashboard KPIs BALDERRAMA",
+  "description": "Interfaz web — Dashboard KPIs VECSA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

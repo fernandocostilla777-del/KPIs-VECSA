@@ -1,9 +1,9 @@
 /**
- * Tema Balderrama: light | dark | system
+ * Tema VECSA: light | dark | system
  * Preferencia en localStorage; data-theme en <html> = tema resuelto.
  */
 (function (global) {
-  const STORAGE_KEY = 'balderrama-theme';
+  const STORAGE_KEY = 'vecsa-theme';
   const PREFS = ['system', 'light', 'dark'];
   const LABELS = {
     system: 'Sistema',
@@ -55,7 +55,7 @@
       /* ignore */
     }
     bindSystemListener(preference);
-    global.dispatchEvent(new CustomEvent('balderrama:theme', {
+    global.dispatchEvent(new CustomEvent('vecsa:theme', {
       detail: { preference, resolved },
     }));
     return { preference, resolved };
@@ -83,7 +83,7 @@
 
   boot();
 
-  global.BalderramaTheme = {
+  global.VECSATheme = {
     STORAGE_KEY,
     PREFS,
     LABELS,
@@ -94,4 +94,5 @@
     resolve,
     boot,
   };
+  global.BalderramaTheme = global.VECSATheme;
 })(typeof window !== 'undefined' ? window : globalThis);

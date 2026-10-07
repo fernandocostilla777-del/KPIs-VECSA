@@ -1,5 +1,5 @@
 /**
- * ETL histórico: carga completa "Balderrama Ciclos" a SQLite local.
+ * ETL histórico: carga completa "VECSA Ciclos" a SQLite local.
  *
  * Fuente : CSV o XLSX export del CRM (ID_CONTACTO = ID CRM)
  * Destino: backend/data/crm-ciclos.db  · tabla crm_actividades (archivo histórico)
@@ -8,7 +8,7 @@
  *   node backend/scripts/ingest-crm-ciclos-railway.js "<export reciente>"
  *
  * Uso (solo reconstrucción histórica — borra y recrea crm_actividades):
- *   node backend/scripts/etl-crm-ciclos.js --historical "C:/ruta/Balderrama acumulados ciclos.xlsx"
+ *   node backend/scripts/etl-crm-ciclos.js --historical "C:/ruta/VECSA acumulados ciclos.xlsx"
  */
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +16,7 @@ const readline = require('readline');
 const XLSX = require('xlsx');
 const Database = require('better-sqlite3');
 
-const DEFAULT_SOURCE = 'C:/Users/ABP-SDN-SI-221/Documents/JULIO 26/Balderrama acumulados ciclos.xlsx';
+const DEFAULT_SOURCE = 'C:/Users/ABP-SDN-SI-221/Documents/JULIO 26/VECSA acumulados ciclos.xlsx';
 const DB_PATH = path.join(__dirname, '../data/crm-ciclos.db');
 
 const COLUMNS = [
@@ -180,7 +180,7 @@ async function run() {
 
   if (!historical) {
     console.error('Este ETL reemplaza la tabla histórica local. Para carga operativa en Railway use:');
-    console.error('  node backend/scripts/ingest-crm-ciclos-railway.js "<export Balderrama Ciclos>"');
+    console.error('  node backend/scripts/ingest-crm-ciclos-railway.js "<export VECSA Ciclos>"');
     console.error('Si desea reconstruir el histórico local, agregue --historical');
     process.exit(1);
   }

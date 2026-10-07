@@ -1,7 +1,7 @@
 {
-  "name": "balderrama-cloud-api",
+  "name": "vecsa-cloud-api",
   "version": "1.0.0",
-  "description": "API en la nube — sincronización BALDERRAMA (PostgreSQL)",
+  "description": "API en la nube — sincronización VECSA (PostgreSQL)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

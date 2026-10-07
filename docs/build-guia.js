@@ -92,7 +92,7 @@ const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<title>Guía de uso · Dashboard KPIs Balderrama</title>
+<title>Guía de uso · Dashboard KPIs VECSA</title>
 <style>
   :root { --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --brand:#0d9488; --brand2:#2563eb; --bg:#f8fafc; }
   * { box-sizing: border-box; }
@@ -145,7 +145,7 @@ const html = `<!DOCTYPE html>
 <body>
 <section class="cover">
   <div>
-    <div style="opacity:.8;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;margin-bottom:18px;">Balderrama · Chevrolet · ABP 2026</div>
+    <div style="opacity:.8;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;margin-bottom:18px;">VECSA · Chevrolet · ABP 2026</div>
     <h1>Guía de uso del Dashboard de KPIs</h1>
     <p>Manual completo de perfiles, submenús, cadena de indicadores ABP, Seguimiento 360 (retención taller + recompra Seminuevos), alertas, bandeja de mensajes y asistente IA. Todas las imágenes son capturas reales del tablero en operación.</p>
     <div class="meta">
@@ -472,7 +472,7 @@ const html = `<!DOCTYPE html>
   ${nextFig('s22-mensajes-chat.png', 'Detalle de un seguimiento cerrado: alarma de cobertura, conversación admin↔comercial y resolución documentada.')}
 
   <h2 id="asistente">10. Asistente IA · expandido con gráficos</h2>
-  <p>El <strong>Analista BALDERRAMA</strong> responde en chat y, al expandir visualizaciones, genera <strong>KPIs + gráficas</strong> (comparativo YTD, ventas por sucursal, distribución por estatus, etc.) a partir de las herramientas del periodo consultado.</p>
+  <p>El <strong>Analista VECSA</strong> responde en chat y, al expandir visualizaciones, genera <strong>KPIs + gráficas</strong> (comparativo YTD, ventas por sucursal, distribución por estatus, etc.) a partir de las herramientas del periodo consultado.</p>
   ${nextFig('s19-ia-expandido.png', 'Asistente expandido: chat con desglose de ventas por modelo + panel de visualizaciones (indicadores y comparativo YTD).')}
   ${nextFig('s20-ia-graficos.png', 'Gráficos generados por el asistente: histórico 2025 vs 2026 y barras de ventas por sucursal.')}
 
@@ -499,10 +499,10 @@ const html = `<!DOCTYPE html>
     </tbody>
   </table>
 
-  <p class="caption">Documento generado a partir del código, del catálogo ABP 2026 y de capturas reales del proyecto Balderrama KPIs (incluidos submenús, 360 por cliente/VIN con franjas FEM y equity Seminuevos, bandeja de mensajes y asistente con gráficos).</p>
+  <p class="caption">Documento generado a partir del código, del catálogo ABP 2026 y de capturas reales del proyecto VECSA KPIs (incluidos submenús, 360 por cliente/VIN con franjas FEM y equity Seminuevos, bandeja de mensajes y asistente con gráficos).</p>
 </div>
 </body>
 </html>`;
 
-fs.writeFileSync('docs/guia-uso-balderrama.html', html, 'utf8');
-console.log('OK', 'docs/guia-uso-balderrama.html', Buffer.byteLength(html), 'bytes', 'figs', figN - 1);
+fs.writeFileSync('docs/guia-uso-vecsa.html', html, 'utf8');
+console.log('OK', 'docs/guia-uso-vecsa.html', Buffer.byteLength(html), 'bytes', 'figs', figN - 1);

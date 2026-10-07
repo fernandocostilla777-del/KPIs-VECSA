@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.balderrama.kpis"
+    namespace = "com.vecsa.kpis"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.balderrama.kpis"
+        applicationId "com.vecsa.kpis"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

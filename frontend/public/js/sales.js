@@ -764,7 +764,7 @@
   }
 
   const CARRY_OVER_EXCLUDED_APARTADO_POR = [
-    'BALDERRAMA CASA INTERCAMBIOS',
+    'VECSA CASA INTERCAMBIOS',
   ];
 
   function normalizeApartadoKey(value) {

@@ -13,7 +13,7 @@ Tras el go-live, **cambiar contraseñas** desde `/admin.html` (usuario `admin`).
 | Usuario | Contraseña temporal | Rol sistema | Quién lo usa | Páginas |
 |---------|---------------------|-------------|--------------|---------|
 | `admin` | `Admin2026!` | Administración | TI / soporte | Todo + gestión de usuarios |
-| `gerente.general` | `GgBalderrama2026!` | Dirección | **Gerente general** (valida PPTO) | Overview, ventas, forecast, inventario, contabilidad/EEFF, postventa |
+| `gerente.general` | `GgVECSA2026!` | Dirección | **Gerente general** (valida PPTO) | Overview, ventas, forecast, inventario, contabilidad/EEFF, postventa |
 | `direccion` | `Direccion2026!` | Dirección | Dirección / suplente GG | Igual que arriba |
 | `contraloria` | `Contraloria2026!` | Contabilidad | **Contraloría** (valida EEFF) | Contabilidad + EEFF |
 | `contabilidad` | `Conta2026!` | Contabilidad | Contabilidad operativa | Contabilidad + EEFF |

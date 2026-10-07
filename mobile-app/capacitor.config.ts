@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.balderrama.kpis',
-  appName: 'BALDERRAMA Analytics',
+  appId: 'com.vecsa.kpis',
+  appName: 'VECSA Analytics',
   webDir: 'www'
 };
 

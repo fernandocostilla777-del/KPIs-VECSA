@@ -11,7 +11,7 @@ const { findUser } = require('../src/auth/userStore');
 
 const PILOT_USERS = [
   { username: 'admin', password: 'Admin2026!', role: 'administracion', label: 'TI / Administración' },
-  { username: 'gerente.general', password: 'GgBalderrama2026!', role: 'direccion', label: 'Gerente general (PPTO)' },
+  { username: 'gerente.general', password: 'GgVECSA2026!', role: 'direccion', label: 'Gerente general (PPTO)' },
   { username: 'direccion', password: 'Direccion2026!', role: 'direccion', label: 'Dirección' },
   { username: 'contraloria', password: 'Contraloria2026!', role: 'contabilidad', label: 'Contraloría (EEFF)' },
   { username: 'contabilidad', password: 'Conta2026!', role: 'contabilidad', label: 'Contabilidad operativa' },

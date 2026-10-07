@@ -301,7 +301,7 @@ function buildAgencyDetailInsight(agencia, temporal = {}) {
       ventasAdicionalesRequeridas: ventasAdicionales,
     },
     chatPrompt: [
-      'Eres el analista financiero de BALDERRAMA. Explica la cobertura del punto de equilibrio.',
+      'Eres el analista financiero de VECSA. Explica la cobertura del punto de equilibrio.',
       'Fórmula: Ratio de cobertura = Ventas ÷ Punto de equilibrio. Cobertura % = ratio × 100.',
       `Hallazgo: ${title}`,
       'Datos:',

@@ -166,7 +166,7 @@ async function getVentasPorModelo({ modelo, fechaInicio, fechaFin, incluirFlotil
     },
     razonamiento: highEnd
       ? [
-        'HIGH END = canal de lujo Balderrama (no es forma de pago).',
+        'HIGH END = canal de lujo VECSA (no es forma de pago).',
         `Carlines: ${HIGH_END_CARLINES.join(', ')}.`,
         'Filtro por VEH_TIPOAUTO / UNC_FAMILIA que contengan esos nombres.',
       ]

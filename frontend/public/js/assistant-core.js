@@ -1,7 +1,7 @@
 window.AssistantChat = (function () {
-  const STORAGE_KEY = 'balderrama-ai-chat-v2';
+  const STORAGE_KEY = 'vecsa-ai-chat-v2';
   const DEFAULT_WELCOME =
-    'Soy tu asistente de BALDERRAMA.\n'
+    'Soy tu asistente de VECSA.\n'
     + 'Razonaré con el lente de tu perfil y recordaré tus preferencias para enfocarme en lo que necesitas decidir.';
   let welcomeMessage = DEFAULT_WELCOME;
   let profileLabel = null;
@@ -213,7 +213,7 @@ window.AssistantChat = (function () {
     ],
   };
 
-  const LAST_PROMPTS_KEY = 'balderrama-ai-prompts-last';
+  const LAST_PROMPTS_KEY = 'vecsa-ai-prompts-last';
 
   function getPageId() {
     return String(document.body?.dataset?.page || 'overview').toLowerCase();

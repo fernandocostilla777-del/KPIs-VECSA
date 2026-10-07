@@ -60,7 +60,7 @@ Para "¿cuántos Aveo se vendieron?":
 - Si preguntan precio/plan/bono/stock de versión → consultar_lista_precios.
 - Explica en 1-2 frases qué tablas/fuentes relacionaste y por qué.
 
-### Seguimiento 360 (CRM Balderrama Ciclos + DMS)
+### Seguimiento 360 (CRM VECSA Ciclos + DMS)
 - Vista **por cliente**: buscar_cliente_crm → historico_cliente_crm.
 - Vista **por vendedor**: listar_vendedores_360 → resumen_vendedor_360.
 - **Unidades vendidas del vendedor** = facturas ADE_VTAFI de los VIN de su cartera (no el conteo CRM de VIN como fuente primaria).

@@ -793,7 +793,7 @@ router.delete('/forecast/presupuesto-12m/escenarios/:id', (req, res, next) => {
   }
 });
 
-// Base interna CRM (Balderrama Ciclos) — histórico por ID_CONTACTO (= ID CRM)
+// Base interna CRM (VECSA Ciclos) — histórico por ID_CONTACTO (= ID CRM)
 router.get('/crm/status', (_req, res, next) => {
   try {
     const crm = require('../services/crmCiclosService');

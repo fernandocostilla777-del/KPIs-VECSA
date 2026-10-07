@@ -27,11 +27,11 @@ Al cerrar invitaciones, marca abajo:
 
 ### A) Contraloría — EEFF
 
-**Asunto:** Validación EEFF dashboard Balderrama (21–24 jul)
+**Asunto:** Validación EEFF dashboard VECSA (21–24 jul)
 
 Hola,
 
-Para el piloto del dashboard KPIs Balderrama necesitamos validar el **Estado de resultados / EEFF** contra el reporte oficial.
+Para el piloto del dashboard KPIs VECSA necesitamos validar el **Estado de resultados / EEFF** contra el reporte oficial.
 
 - **Duración:** 45–60 min  
 - **Usuario:** `contraloria` (te lo enviamos por separado)  
@@ -45,7 +45,7 @@ Gracias.
 
 ### B) Gerente general — PPTO
 
-**Asunto:** Validación Real vs Presupuesto 2026 — dashboard Balderrama
+**Asunto:** Validación Real vs Presupuesto 2026 — dashboard VECSA
 
 Hola,
 

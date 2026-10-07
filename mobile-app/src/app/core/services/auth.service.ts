@@ -17,7 +17,7 @@ export interface SessionUser {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly base = environment.apiUrl;
-  private readonly tokenKey = 'balderrama_mobile_token';
+  private readonly tokenKey = 'vecsa_mobile_token';
   private sessionSubject = new BehaviorSubject<SessionUser | null>(null);
 
   readonly session$ = this.sessionSubject.asObservable();

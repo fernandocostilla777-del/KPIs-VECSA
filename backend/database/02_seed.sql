@@ -1,5 +1,5 @@
 /*
-  KPIs BALDERRAMA — Datos semilla
+  KPIs VECSA — Datos semilla
   Basado en: Total de cuentas.xlsx, Gatos para buscar origen.xlsx,
              costCenterMapping.js, prorationMatrix.js, VTASMEN
 */

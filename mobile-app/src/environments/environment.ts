@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  /** Cloud API BALDERRAMA (sin barra final). */
-  apiUrl: 'https://kpis-balderrama-production.up.railway.app',
+  /** Cloud API VECSA (sin barra final). */
+  apiUrl: 'https://kpis-vecsa-production.up.railway.app',
 };

@@ -1,6 +1,6 @@
 /**
  * Análisis de liquidez (corto plazo) a partir del activo/pasivo circulante.
- * Teoría operativa Balderrama:
+ * Teoría operativa VECSA:
  * - Capital de trabajo = AC − PC
  * - Razón circulante = AC ÷ PC
  * - Prueba ácida = (Caja + Bancos + Equivalentes a efectivo + CxC) ÷ Pasivo a corto plazo
@@ -148,7 +148,7 @@ function computeLiquidezAnalysis(input = {}) {
   const inventariosTotal = round2(inventarios.reduce((a, x) => a + x.value, 0));
   const anticipadosTotal = round2(anticipados.reduce((a, x) => a + x.value, 0));
 
-  // Numerador estricto de prueba ácida Balderrama
+  // Numerador estricto de prueba ácida VECSA
   const activosRapidos = round2(efectivoTotal + cxcTotal);
 
   const capitalTrabajo = round2(activoCirculante - pasivoCirculante);

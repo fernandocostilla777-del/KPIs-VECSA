@@ -1,5 +1,5 @@
 /* Verifica endpoints móviles contra Railway (sin secretos en logs). */
-const BASE = process.env.CLOUD_API_URL || 'https://kpis-balderrama-production.up.railway.app';
+const BASE = process.env.CLOUD_API_URL || 'https://kpis-vecsa-production.up.railway.app';
 
 function credentialsFromEnv() {
   if (process.env.MOBILE_TEST_USER && process.env.MOBILE_TEST_PASS) {

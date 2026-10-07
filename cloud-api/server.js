@@ -37,7 +37,7 @@ const defaultOrigins = [
   'http://localhost:3002',
   'http://127.0.0.1:3002',
   'https://objetivos-web-production.up.railway.app',
-  'https://objetivos.automotrizbalderrama.com',
+  'https://objetivos.automotrizvecsa.com',
   'http://localhost',
   'https://localhost',
   'capacitor://localhost',
@@ -61,7 +61,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'balderrama-cloud-api' });
+  res.json({ ok: true, service: 'vecsa-cloud-api' });
 });
 
 app.use('/api/sync', syncRoutes);
@@ -108,7 +108,7 @@ ensureSchema()
   .then(() => {
     app.listen(PORT, HOST, () => {
       console.log('');
-      console.log('  BALDERRAMA — Cloud Sync API');
+      console.log('  VECSA — Cloud Sync API');
       console.log(`  → http://localhost:${PORT}/api/health`);
       console.log(`  → POST http://localhost:${PORT}/api/sync/ingest`);
       console.log(`  → GET  http://localhost:${PORT}/api/personal`);

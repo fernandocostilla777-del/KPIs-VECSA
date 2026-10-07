@@ -1,7 +1,7 @@
 {
-  "name": "kpis-balderrama-backend",
+  "name": "kpis-vecsa-backend",
   "version": "1.0.0",
-  "description": "API REST — Dashboard KPIs BALDERRAMA",
+  "description": "API REST — Dashboard KPIs VECSA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

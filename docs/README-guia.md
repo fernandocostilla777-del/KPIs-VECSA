@@ -1,11 +1,11 @@
-# Guía de uso · Dashboard KPIs Balderrama
+# Guía de uso · Dashboard KPIs VECSA
 
 ## Entregables
 
 | Archivo | Descripción |
 |---|---|
-| `Guia-uso-Balderrama-KPIs.pdf` | PDF listo para entregar |
-| `guia-uso-balderrama.html` | Versión HTML imprimible (fuente del PDF) |
+| `Guia-uso-VECSA-KPIs.pdf` | PDF listo para entregar |
+| `guia-uso-vecsa.html` | Versión HTML imprimible (fuente del PDF) |
 | `guia-imagenes/` | Capturas e ilustraciones del manual |
 | `build-guia.js` | Regenera el HTML desde el catálogo ABP |
 
@@ -15,7 +15,7 @@
 node docs/build-guia.js
 # Luego abrir el HTML en Chrome → Ctrl+P → Guardar como PDF
 # o:
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --print-to-pdf="$PWD\docs\Guia-uso-Balderrama-KPIs.pdf" "file:///$PWD/docs/guia-uso-balderrama.html"
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --print-to-pdf="$PWD\docs\Guia-uso-VECSA-KPIs.pdf" "file:///$PWD/docs/guia-uso-vecsa.html"
 ```
 
 ## Contenido del manual

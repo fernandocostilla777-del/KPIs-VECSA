@@ -13,7 +13,7 @@ const ROLE_DEFAULTS = {
   administracion: {
     id: 'administracion',
     label: 'Administración',
-    pages: ['admin', 'overview', 'sales', 'forecast', 'inventory', 'lista-precios', 'contabilidad', 'post-sales', 'seguimiento'],
+    pages: ['admin', 'overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento'],
     homePath: '/',
     canManageUsers: true,
     apiPrefixes: ['*'],
@@ -21,23 +21,23 @@ const ROLE_DEFAULTS = {
   direccion: {
     id: 'direccion',
     label: 'Dirección',
-    pages: ['overview', 'sales', 'forecast', 'inventory', 'lista-precios', 'contabilidad', 'post-sales', 'seguimiento'],
+    pages: ['overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento'],
     homePath: '/',
     apiPrefixes: ['*'],
   },
   gerencia_comercial: {
     id: 'gerencia_comercial',
     label: 'Gerencia Comercial',
-    pages: ['overview', 'sales', 'forecast', 'inventory', 'lista-precios', 'seguimiento'],
+    pages: ['overview', 'sales', 'forecast', 'inventory', 'seguimiento'],
     homePath: '/',
-    apiPrefixes: ['/overview', '/ventas', '/forecast', '/inventory', '/lista-precios', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
+    apiPrefixes: ['/overview', '/ventas', '/forecast', '/inventory', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
   },
   vendedor: {
     id: 'vendedor',
     label: 'Vendedor',
-    pages: ['sales', 'lista-precios', 'seguimiento'],
+    pages: ['sales', 'seguimiento'],
     homePath: '/seguimiento.html',
-    apiPrefixes: ['/ventas', '/lista-precios', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
+    apiPrefixes: ['/ventas', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
   },
   contabilidad: {
     id: 'contabilidad',
@@ -56,13 +56,12 @@ const ROLE_DEFAULTS = {
   gestion_inventario: {
     id: 'gestion_inventario',
     label: 'Gestión de inventario',
-    pages: ['overview', 'inventory', 'post-sales', 'lista-precios'],
+    pages: ['overview', 'inventory', 'post-sales'],
     homePath: '/inventory.html',
     apiPrefixes: [
       '/overview',
       '/inventory',
       '/post-sales',
-      '/lista-precios',
       '/ai',
       '/health',
     ],

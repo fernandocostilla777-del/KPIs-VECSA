@@ -266,7 +266,7 @@ function AppHeader({
     <header className="topbar">
       <div className="brand">
         <Image
-          src="/balderrama.png"
+          src="/vecsa.png"
           alt={month.label}
           width={1024}
           height={186}

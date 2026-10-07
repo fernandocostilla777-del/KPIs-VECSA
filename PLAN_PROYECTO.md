@@ -1,4 +1,4 @@
-# Plan del proyecto — KPIs BALDERRAMA
+# Plan del proyecto — KPIs VECSA
 
 > **Nota (1 oct 2026):** este documento está cortado en julio 2026. Para el estado actual ver [docs/ESTADO_Y_ENFOQUE.md](./docs/ESTADO_Y_ENFOQUE.md) y [docs/MAPA_VISUAL.md](./docs/MAPA_VISUAL.md).
 
@@ -50,7 +50,7 @@ Entregar un **dashboard ejecutivo confiable** sobre GMOFARRIL para dirección, c
 
 ```mermaid
 gantt
-    title KPIs Balderrama — 6 semanas a go-live
+    title KPIs VECSA — 6 semanas a go-live
     dateFormat  YYYY-MM-DD
     section Semana 1
     Piloto + auth + smoke              :w1, 2026-07-14, 7d

@@ -1,4 +1,4 @@
-# BALDERRAMA Cloud API
+# VECSA Cloud API
 
 **Versión intermedia en la nube** — no es el dashboard completo. Solo recibe por API los datos que envía el servidor local y los persiste en **PostgreSQL** (estado actual + histórico de cambios).
 
@@ -143,7 +143,7 @@ Incluye del SQLite local (`crm-ciclos.db`):
 - **leads** — Google Sheet Acumulado (`fecha_entrada` en el mes)
 - **solicitudes** — solicitudes F&I
 - **pruebas** — pruebas de manejo
-- **actividades** — ciclos Balderrama Ciclos
+- **actividades** — ciclos VECSA Ciclos
 
 Cada registro usa `id` con formato `lead|123`, `solicitud|45`, `prueba|67`, `actividad|890`.
 
@@ -166,14 +166,14 @@ curl -H "X-API-Key: $CLOUD_SYNC_API_KEY" \
 
 ### Ciclos CRM (`crm_ciclos`)
 
-Tabla dedicada con el export de Balderrama Ciclos (un renglón = actividad). Se crea sola al arrancar cloud-api.
+Tabla dedicada con el export de VECSA Ciclos (un renglón = actividad). Se crea sola al arrancar cloud-api.
 
 Campos: `ID_CONTACTO` (también `D_CONTACTO`), `NOMBRE_CONTACTO`, `ID_CICLO`, fechas de ciclo/actividad, `ESTATUS`, `TIPO_ACTIVIDAD`, resultado, medio de contacto, factura, VIN, vendedor.
 
 Carga remota desde el servidor de oficina (`X-API-Key`):
 
 ```bash
-curl -X POST https://kpis-balderrama-production.up.railway.app/api/crm/ingest \
+curl -X POST https://kpis-vecsa-production.up.railway.app/api/crm/ingest \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $CLOUD_SYNC_API_KEY" \
   -d '{"replaceAll":false,"records":[{"ID_CONTACTO":"123","NOMBRE_CONTACTO":"Juan Pérez","ID_CICLO":"C1","VENDEDOR":"Ana"}]}'

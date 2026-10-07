@@ -6,7 +6,7 @@ const officeCommands = require('../services/officeCommandsStore');
 const router = express.Router();
 
 router.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'balderrama-cloud-api' });
+  res.json({ ok: true, service: 'vecsa-cloud-api' });
 });
 
 router.get('/status', requireApiKey, async (_req, res, next) => {

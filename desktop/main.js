@@ -420,8 +420,8 @@ function createMenu() {
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'KPIs Balderrama',
-              message: `KPIs Balderrama ${app.getVersion()}`,
+              title: 'KPIs VECSA',
+              message: `KPIs VECSA ${app.getVersion()}`,
               detail: `Escritorio Electron\nBackend: 127.0.0.1:${BACKEND_PORT}\nFrontend: 127.0.0.1:${FRONTEND_PORT}\nConfig: ${configEnvPath()}`,
             });
           },
@@ -457,7 +457,7 @@ async function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     show: false,
-    title: 'KPIs Balderrama',
+    title: 'KPIs VECSA',
     backgroundColor: '#0f172a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -519,7 +519,7 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     if (process.platform === 'win32') {
-      app.setAppUserModelId('com.balderrama.kpis');
+      app.setAppUserModelId('com.vecsa.kpis');
     }
     createWindow();
     initAutoUpdater({ getWindow: () => mainWindow });
