@@ -1,0 +1,70 @@
+{
+  "anio": 2026,
+  "trimestres": {
+    "3": {
+      "trimestre": 3,
+      "etiqueta": "T3",
+      "meses": [
+        { "mes": 7, "etiqueta": "JUL", "retail": 42, "objetivo": 40, "cerrado": true },
+        { "mes": 8, "etiqueta": "AGO", "retail": 36, "objetivo": 40, "cerrado": true },
+        { "mes": 9, "etiqueta": "SEP", "retail": 44, "objetivo": 40, "cerrado": true }
+      ],
+      "grupo": { "real": 400, "objetivo": 380 },
+      "orientacion": {
+        "mercadotecnia": {
+          "responsableCertificado": true,
+          "usoFondo": 0.9,
+          "activacionEstrategica": true,
+          "plan": true
+        },
+        "voc": {
+          "cxa": true,
+          "customerBoard": true,
+          "calidadDatos": true,
+          "incidencias": 1
+        },
+        "retailStandards": {
+          "objetivos": true,
+          "remodelacion": true
+        },
+        "entrenamiento": {
+          "tmsi": true,
+          "dms": true,
+          "ictXev": true,
+          "ictTecnicoSenior": true,
+          "lanzamientoProducto": true
+        }
+      },
+      "calidad": {
+        "bev": { "real": 12, "objetivo": 12 },
+        "inventarios": [
+          { "mes": 7, "etiqueta": "JUL", "unidades": 50, "antiguedadAlta": 4, "bloqueoSuministro": 10, "patioVdc": 5 },
+          { "mes": 8, "etiqueta": "AGO", "unidades": 48, "antiguedadAlta": 3, "bloqueoSuministro": 0, "patioVdc": 4 },
+          { "mes": 9, "etiqueta": "SEP", "unidades": 40, "antiguedadAlta": 8, "bloqueoSuministro": 5, "patioVdc": 6 }
+        ]
+      },
+      "topes": {
+        "demo": 50000,
+        "loaner": 10000,
+        "topManagement": 35000,
+        "tactic": 20000
+      },
+      "penalizaciones": {
+        "cbsDigitalTools": { "cumple": true },
+        "vehiculosDemo": { "cumple": false, "mesesIncumplidos": 1 },
+        "lineaCredito": { "cumple": true, "mesesIncumplidos": 0 },
+        "conversionVentas": { "cumple": false, "mesesIncumplidos": 2 }
+      }
+    },
+    "4": {
+      "trimestre": 4,
+      "etiqueta": "T4",
+      "meses": [
+        { "mes": 10, "etiqueta": "OCT", "retail": 18, "objetivo": 45, "cerrado": true },
+        { "mes": 11, "etiqueta": "NOV", "retail": 0, "objetivo": 45, "cerrado": false },
+        { "mes": 12, "etiqueta": "DIC", "retail": 0, "objetivo": 50, "cerrado": false }
+      ],
+      "grupo": { "real": 18, "objetivo": 140 }
+    }
+  }
+}

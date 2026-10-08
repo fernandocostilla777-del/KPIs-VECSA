@@ -3,23 +3,29 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Iniciar sesión | VECSA</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<title>Iniciar sesión | VECSA BMW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="/css/dashboard.css?v=145" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=172" rel="stylesheet"/>
 <script src="/js/theme.js?v=1"></script>
 </head>
 <body class="login-body">
 <main class="login-shell">
-  <section class="login-card">
+  <section class="login-card" id="loginCard">
     <div class="login-brand">
-      <img src="/img/Imagen2.png" alt="VECSA" class="login-logo"/>
+      <div class="brand">
+        <span class="roundel"><img src="/img/bmw-roundel.svg?v=3" alt="BMW"/></span>
+        <span class="brand-name">VECSA Hidalgo</span>
+      </div>
+      <p class="subtitle">BMW · MINI · Motorrad</p>
     </div>
 
     <form id="loginForm" class="login-form" autocomplete="on">
       <label class="login-field">
         <span>Usuario</span>
-        <input type="text" id="username" name="username" required autocomplete="username" placeholder="admin, direccion, gerencia⬦"/>
+        <input type="text" id="username" name="username" required autocomplete="username" placeholder="Tu usuario"/>
       </label>
       <label class="login-field">
         <span>Contraseña</span>
@@ -32,10 +38,7 @@
       </label>
       <p id="loginError" class="login-error hidden" role="alert"></p>
       <p id="loginSuccess" class="login-success hidden" role="status"></p>
-      <button type="submit" class="login-submit" id="btnLogin">
-        <span class="material-symbols-outlined">login</span>
-        <span>Ingresar</span>
-      </button>
+      <button type="submit" class="login-submit" id="btnLogin">Ingresar</button>
       <button type="button" class="login-text-btn" id="btnForgot">¿Olvidaste tu contraseña?</button>
     </form>
 
@@ -46,10 +49,7 @@
         <span>Usuario</span>
         <input type="text" id="resetUsername" name="resetUsername" required autocomplete="username" placeholder="Tu usuario"/>
       </label>
-      <button type="button" class="login-submit login-submit--ghost" id="btnRequestCode">
-        <span class="material-symbols-outlined">forward_to_inbox</span>
-        <span>Enviar código</span>
-      </button>
+      <button type="button" class="login-submit login-submit--ghost" id="btnRequestCode">Enviar código</button>
       <p id="resetInfo" class="login-success hidden" role="status"></p>
       <label class="login-field">
         <span>Código de 6 dígitos</span>
@@ -69,15 +69,13 @@
         <input type="password" id="resetPassword2" name="resetPassword2" autocomplete="new-password" minlength="8"/>
       </label>
       <p id="resetError" class="login-error hidden" role="alert"></p>
-      <button type="submit" class="login-submit" id="btnResetPassword">
-        <span class="material-symbols-outlined">lock_reset</span>
-        <span>Guardar nueva contraseña</span>
-      </button>
+      <button type="submit" class="login-submit" id="btnResetPassword">Guardar nueva contraseña</button>
       <button type="button" class="login-text-btn" id="btnBackLogin">Volver a iniciar sesión</button>
     </form>
   </section>
+  <p class="login-footer">© VECSA 2026</p>
 </main>
 <script src="/js/auth-client.js"></script>
-<script src="/js/login.js?v=3"></script>
+<script src="/js/login.js?v=4"></script>
 </body>
 </html>

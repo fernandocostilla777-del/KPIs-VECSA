@@ -14,17 +14,21 @@ const SUCURSALES = [
   { key: 'cholula', label: 'Cholula' },
 ];
 
-const YTD_CENTROS = [
-  { key: 'todos', label: 'Todos' },
-  ...SUCURSALES,
-];
-
 function getDb() {
   return new Database(DB_PATH, { readonly: true, fileMustExist: true });
 }
 
 function hasTable(d, name) {
   return !!d.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?`).get(name);
+}
+
+function hasPruebaEnVisita(d) {
+  if (!hasTable(d, 'crm_trafico_piso')) return false;
+  return !!d.prepare(`
+    SELECT 1 FROM crm_trafico_piso
+    WHERE UPPER(TRIM(COALESCE(prueba_manejo_flag, ''))) IN ('SI', 'NO')
+    LIMIT 1
+  `).get();
 }
 
 function norm(value) {
@@ -43,6 +47,62 @@ function mapSucursalKey(centro, fuerza) {
   if (c.includes('CHOLULA') || f.includes('CHOLULA')) return 'cholula';
   if (c.includes('MATRIZ') || f.includes('MATRIZ') || c.includes('SERDAN')) return 'matriz';
   return 'otras';
+}
+
+const MARCA_ORDER = ['bmw', 'mini', 'motorrad', 'smart', 'core', 'multimarca', 'sin-marca'];
+
+function mapMarcaKey(marca) {
+  const s = norm(marca);
+  if (!s) return 'sin-marca';
+  if (s === 'BMW' || s === 'BMWI' || s.startsWith('BMW ')) return 'bmw';
+  if (s === 'MINI') return 'mini';
+  if (s.includes('MOTO')) return 'motorrad';
+  if (s === 'SMART') return 'smart';
+  if (s === 'CORE') return 'core';
+  if (s.includes('MULTI')) return 'multimarca';
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sin-marca';
+}
+
+function marcaLabel(key, raw) {
+  const labels = {
+    bmw: 'BMW',
+    mini: 'MINI',
+    motorrad: 'Motorrad',
+    smart: 'SMART',
+    core: 'CORE',
+    multimarca: 'Multimarca',
+    'sin-marca': 'Sin marca',
+  };
+  if (labels[key]) return labels[key];
+  const texto = String(raw || '').trim();
+  return texto || key;
+}
+
+function marcasDisponibles(d) {
+  const todos = { key: 'todos', label: 'Todos' };
+  if (!hasTable(d, 'crm_trafico_piso')) return [todos];
+  const rows = d.prepare(`
+    SELECT TRIM(COALESCE(centro_trabajo, '')) AS marca, COUNT(*) AS n
+    FROM crm_trafico_piso
+    WHERE fecha IS NOT NULL
+    GROUP BY 1
+  `).all();
+  const byKey = new Map();
+  for (const row of rows) {
+    const key = mapMarcaKey(row.marca);
+    const prev = byKey.get(key) || { key, label: marcaLabel(key, row.marca), n: 0 };
+    prev.n += Number(row.n) || 0;
+    byKey.set(key, prev);
+  }
+  const marcas = [...byKey.values()].sort((a, b) => {
+    const ia = MARCA_ORDER.indexOf(a.key);
+    const ib = MARCA_ORDER.indexOf(b.key);
+    if (ia === -1 && ib === -1) return b.n - a.n;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return [todos, ...marcas.map(({ key, label }) => ({ key, label }))];
 }
 
 /** Columna R (COMENTARIOS): solo NUEVOS cuentan para afluencia. */
@@ -128,7 +188,7 @@ function buildYearMonthSeries(d, year, ytdEndDate, centroKey = null) {
 
   if (hasTable(d, 'crm_trafico_piso')) {
     const rows = d.prepare(`
-      SELECT fecha, comentarios, reconciliacion, centro_trabajo, fuerza
+      SELECT fecha, comentarios, reconciliacion, centro_trabajo, fuerza, prueba_manejo_flag
       FROM crm_trafico_piso
       WHERE fecha IS NOT NULL
         AND fecha >= ?
@@ -136,10 +196,11 @@ function buildYearMonthSeries(d, year, ytdEndDate, centroKey = null) {
     `).all(inicio, fin);
 
     for (const row of rows) {
-      if (!isNuevos(row.comentarios)) continue;
-      if (filterCentro && mapSucursalKey(row.centro_trabajo, row.fuerza) !== filterCentro) continue;
+      if (filterCentro && mapMarcaKey(row.centro_trabajo) !== filterCentro) continue;
       const month = Number(String(row.fecha || '').slice(5, 7));
       if (!month || !byM[month]) continue;
+      if (norm(row.prueba_manejo_flag) === 'SI') byM[month].pruebasManejo += 1;
+      if (!isNuevos(row.comentarios)) continue;
       const flags = classifyReconciliacion(row.reconciliacion);
       byM[month].registros += 1;
       if (flags.freshUp) byM[month].freshUp += 1;
@@ -149,7 +210,8 @@ function buildYearMonthSeries(d, year, ytdEndDate, centroKey = null) {
     }
   }
 
-  if (hasTable(d, 'crm_pruebas_manejo')) {
+  const usaPruebaEnVisita = hasPruebaEnVisita(d);
+  if (!usaPruebaEnVisita && hasTable(d, 'crm_pruebas_manejo')) {
     const pruebas = d.prepare(`
       SELECT fecha, centro_trabajo, fuerza_venta
       FROM crm_pruebas_manejo
@@ -158,7 +220,7 @@ function buildYearMonthSeries(d, year, ytdEndDate, centroKey = null) {
         AND fecha <= ?
     `).all(inicio, fin);
     for (const p of pruebas) {
-      if (filterCentro && mapSucursalKey(p.centro_trabajo, p.fuerza_venta) !== filterCentro) continue;
+      if (filterCentro && mapMarcaKey(p.centro_trabajo) !== filterCentro) continue;
       const month = Number(String(p.fecha || '').slice(5, 7));
       if (!month || !byM[month]) continue;
       byM[month].pruebasManejo += 1;
@@ -219,8 +281,9 @@ function buildComparativoYtd(d, fechaFin) {
   const maxQ = quarterOf(end) || 4;
   const maxMonth = Number(end.slice(5, 7)) || 12;
 
+  const marcas = marcasDisponibles(d);
   const porCentro = {};
-  for (const centro of YTD_CENTROS) {
+  for (const centro of marcas) {
     const key = centro.key === 'todos' ? null : centro.key;
     const actualMonths = buildYearMonthSeries(d, year, end, key);
     const anteriorMonths = buildYearMonthSeries(d, year - 1, end, key);
@@ -236,7 +299,7 @@ function buildComparativoYtd(d, fechaFin) {
     anioAnterior: year - 1,
     hasta: end.slice(5, 10),
     maxMonth,
-    centros: YTD_CENTROS,
+    centros: marcas,
     metricas: [
       { key: 'afluenciaTotal', label: 'Afluencia' },
       { key: 'freshUp', label: 'Fresh up' },
@@ -715,6 +778,7 @@ function buildBuyerIndexes(d) {
 
 function rowLooksLikeBuyer(row, buyers) {
   if (!buyers) return false;
+  if (norm(row.observaciones) === 'VENTA') return true;
   if (row.vinVenta && String(row.vinVenta).trim()) return true;
   if (row.vin && String(row.vin).trim() && row.esPrueba) {
     // VIN de prueba = unidad ensayada, no evidencia de compra
@@ -763,7 +827,7 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
         id, fuerza, centro_trabajo, mes_registro, fecha, hora_ingreso, asesor, cliente,
         genero, telefono, correo, auto_interes, forma_contacto, medio, submedio,
         comentarios, reconciliacion, id_crm, folio_ficha, hostess, vin_venta,
-        prueba_manejo_flag, solicitud_flag
+        prueba_manejo_flag, solicitud_flag, observaciones
       FROM crm_trafico_piso
       WHERE fecha IS NOT NULL
         AND fecha >= ?
@@ -783,8 +847,8 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
     summary.citasConversionPct = null;
     summary.snvConversionPct = null;
     summary.pruebasConversionPct = null;
-    const byKey = Object.fromEntries(SUCURSALES.map((s) => [s.key, emptyBucket(s.label)]));
-    byKey.otras = emptyBucket('Otras');
+    const marcas = marcasDisponibles(d).filter((m) => m.key !== 'todos');
+    const byKey = Object.fromEntries(marcas.map((m) => [m.key, emptyBucket(m.label)]));
 
     const detalle = [];
     const detallePorKpi = {
@@ -803,8 +867,9 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
       if (!isNuevos(row.comentarios)) continue;
 
       const flags = classifyReconciliacion(row.reconciliacion);
-      const key = mapSucursalKey(row.centro_trabajo, row.fuerza);
-      const buckets = [summary, byKey[key] || byKey.otras];
+      const key = mapMarcaKey(row.centro_trabajo);
+      if (!byKey[key]) byKey[key] = emptyBucket(marcaLabel(key, row.centro_trabajo));
+      const buckets = [summary, byKey[key]];
 
       for (const b of buckets) {
         b.registros += 1;
@@ -818,7 +883,7 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
       const itemBase = {
         fecha: row.fecha,
         hora: row.hora_ingreso,
-        sucursal: (byKey[key] || byKey.otras).sucursal,
+        sucursal: byKey[key].sucursal,
         sucursalKey: key,
         fuerza: row.fuerza,
         centroTrabajo: row.centro_trabajo,
@@ -840,6 +905,7 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
         folioFicha: row.folio_ficha || null,
         hostess: row.hostess,
         vinVenta: row.vin_venta,
+        observaciones: row.observaciones,
         pruebaManejoFlag: row.prueba_manejo_flag || null,
       };
       const conCompra = rowLooksLikeBuyer(itemBase, buyers);
@@ -856,9 +922,26 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
       if (flags.snv) pushKpi(detallePorKpi.snv, item);
     }
 
-    // Pruebas de manejo (hoja aparte)
+    // Pruebas: si la visita ya trae el flag, esa es la fuente. Si no, la hoja aparte.
     let pruebas = [];
-    if (hasTable(d, 'crm_pruebas_manejo')) {
+    if (hasPruebaEnVisita(d)) {
+      pruebas = rows
+        .filter((row) => norm(row.prueba_manejo_flag) === 'SI')
+        .map((row) => ({
+          fecha: row.fecha,
+          fuerza_venta: row.fuerza,
+          centro_trabajo: row.centro_trabajo,
+          ejecutivo_ventas: row.asesor,
+          nombre_cliente: row.cliente,
+          telefono: row.telefono,
+          auto_interes: row.auto_interes,
+          tipo_auto: row.comentarios,
+          vin: null,
+          id_crm: row.id_crm,
+          hostess_registro: row.hostess,
+          observaciones: row.observaciones,
+        }));
+    } else if (hasTable(d, 'crm_pruebas_manejo')) {
       pruebas = d.prepare(`
         SELECT
           id, fecha, fuerza_venta, centro_trabajo, ejecutivo_ventas, nombre_cliente,
@@ -873,21 +956,19 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
 
     summary.pruebasManejo = pruebas.length;
     for (const p of pruebas) {
-      const key = mapSucursalKey(p.centro_trabajo, p.fuerza_venta);
-      const b = byKey[key] || byKey.otras;
-      b.pruebasManejo += 1;
+      const key = mapMarcaKey(p.centro_trabajo);
+      if (!byKey[key]) byKey[key] = emptyBucket(marcaLabel(key, p.centro_trabajo));
+      byKey[key].pruebasManejo += 1;
     }
 
-    const porSucursal = SUCURSALES.map((s) => byKey[s.key]);
-    if (byKey.otras.registros > 0 || byKey.otras.pruebasManejo > 0) {
-      porSucursal.push(byKey.otras);
-    }
+    const porSucursal = Object.values(byKey).filter((b) => b.registros > 0 || b.pruebasManejo > 0);
 
     const pruebasDetalle = pruebas.slice(0, maxDetalle).map((p) => {
-      const key = mapSucursalKey(p.centro_trabajo, p.fuerza_venta);
+      const key = mapMarcaKey(p.centro_trabajo);
+      if (!byKey[key]) byKey[key] = emptyBucket(marcaLabel(key, p.centro_trabajo));
       const item = {
         fecha: p.fecha,
-        sucursal: (byKey[key] || byKey.otras).sucursal,
+        sucursal: byKey[key].sucursal,
         sucursalKey: key,
         fuerza: p.fuerza_venta,
         centroTrabajo: p.centro_trabajo,
@@ -899,6 +980,7 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
         vin: p.vin,
         idCrm: p.id_crm,
         hostess: p.hostess_registro,
+        observaciones: p.observaciones,
         esPrueba: true,
       };
       item.conCompra = rowLooksLikeBuyer(item, buyers);
@@ -912,6 +994,7 @@ function getAfluenciaDashboard({ fechaInicio, fechaFin, limit = 300 } = {}) {
           idCrm: p.id_crm,
           cliente: p.nombre_cliente,
           telefono: p.telefono,
+          observaciones: p.observaciones,
           esPrueba: true,
         }, buyers);
         return acc + (hit ? 1 : 0);

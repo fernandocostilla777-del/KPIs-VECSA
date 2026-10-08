@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Sistema de Bonos 2026 | VECSA BMW</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=149" rel="stylesheet"/>
+<script src="/js/theme.js?v=1"></script>
+<style>
+  .bonos-note { border-left: 3px solid #d97706; }
+  .bonos-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+  .bonos-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .bonos-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .bonos-pill--pago { background: rgba(22, 163, 74, .15); color: #15803d; }
+  .bonos-pill--debito { background: rgba(220, 38, 38, .15); color: #b91c1c; }
+  .bonos-pill--cero { background: rgba(217, 119, 6, .15); color: #b45309; }
+  .bonos-pill--info { background: rgba(37, 99, 235, .12); color: #1d4ed8; }
+</style>
+</head>
+<body class="dashboard-body" data-page="bonos">
+<div id="loading" class="loading-overlay hidden"><div class="spinner"></div></div>
+<aside id="sidebar"></aside>
+<main class="main-shell">
+<header class="top-bar">
+  <div class="top-bar-actions">
+    <span class="top-bar-title">Sistema de Bonos 2026</span>
+  </div>
+  <div class="top-bar-actions">
+    <label class="filter-label" style="margin:0" for="trimestreSelect">Trimestre</label>
+    <select id="trimestreSelect" class="filter-select"></select>
+    <button id="btnRecargar" class="btn-glass btn-primary" type="button">Actualizar</button>
+  </div>
+</header>
+<div class="main-content custom-scrollbar">
+
+<section id="avisoEjemplo" class="section-panel bonos-note hidden">
+  <h3 class="section-title">Datos de ejemplo</h3>
+  <p class="section-subtitle">No están los archivos reales en <code>backend/data/private/</code>. Esta vista usa los valores ficticios de los <code>.example.json</code>.</p>
+</section>
+
+<section class="section-panel table-panel dashboard-section">
+  <h3 class="section-title" id="tituloAnio">Resumen del año</h3>
+  <p class="section-subtitle" id="subtituloAnio">Bonos capturados por trimestre</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Trimestre</th>
+          <th>Estado</th>
+          <th class="cell-money">Volumen</th>
+          <th class="cell-money">Orientación</th>
+          <th class="cell-money">Calidad</th>
+          <th class="cell-money">Penalizaciones</th>
+          <th class="cell-money">Neto</th>
+        </tr>
+      </thead>
+      <tbody id="tablaAnio"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="kpi-grid" id="tarjetasTrimestre"></section>
+
+<section class="section-panel table-panel dashboard-section">
+  <h3 class="section-title">Bono Volumen · anticipos y liquidación</h3>
+  <p class="section-subtitle" id="volumenMeta">Retail mensual y trimestral frente al objetivo</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th class="cell-num">Retail</th>
+          <th class="cell-num">Objetivo</th>
+          <th class="cell-num">Alcance</th>
+          <th>Anticipo</th>
+          <th class="cell-money">Monto</th>
+        </tr>
+      </thead>
+      <tbody id="tablaVolumen"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="chart-grid">
+  <div class="section-panel table-panel">
+    <h3 class="section-title">Orientación al cliente</h3>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Componente</th><th>Detalle</th><th class="cell-money">Monto</th></tr></thead>
+        <tbody id="tablaOrientacion"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section-panel table-panel">
+    <h3 class="section-title">Calidad de la rentabilidad</h3>
+    <p class="section-subtitle" id="calidadMeta">BEV e inventarios</p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Concepto</th><th>Resultado</th><th class="cell-money">Monto</th></tr></thead>
+        <tbody id="tablaCalidad"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="chart-grid">
+  <div class="section-panel table-panel">
+    <h3 class="section-title">Penalizaciones</h3>
+    <p class="section-subtitle" id="penalizacionMeta"></p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Concepto</th><th>Estado</th><th class="cell-money">Monto</th></tr></thead>
+        <tbody id="tablaPenalizaciones"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section-panel table-panel">
+    <h3 class="section-title">Topes Demo, Loaner, Top Management y Tactic</h3>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Línea</th><th class="cell-money">Solicitado</th><th class="cell-money">Tope</th><th class="cell-money">Aplicado</th></tr></thead>
+        <tbody id="tablaTopes"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section-panel table-panel dashboard-section">
+  <h3 class="section-title">Escenarios de referencia · Bono Volumen</h3>
+  <p class="section-subtitle">Cinco casos de pago, liquidación en cero y débito del mes 3</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Escenario</th>
+          <th class="cell-num">Alcance</th>
+          <th class="cell-money">Anticipos</th>
+          <th class="cell-money">Bono trimestral</th>
+          <th class="cell-money">Mes 3</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody id="tablaEscenarios"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section-panel dashboard-section">
+  <h3 class="section-title">Simulador de Bono Volumen</h3>
+  <p class="section-subtitle">Calcula con los datos que captures aquí. No guarda nada.</p>
+  <form id="formSimulador" class="bonos-form">
+    <label>Retail mes 1<input class="filter-select" name="r1" type="number" step="any" value="100" required></label>
+    <label>Objetivo mes 1<input class="filter-select" name="o1" type="number" step="any" value="100" required></label>
+    <label>Retail mes 2<input class="filter-select" name="r2" type="number" step="any" value="100" required></label>
+    <label>Objetivo mes 2<input class="filter-select" name="o2" type="number" step="any" value="100" required></label>
+    <label>Retail mes 3<input class="filter-select" name="r3" type="number" step="any" value="100" required></label>
+    <label>Objetivo mes 3<input class="filter-select" name="o3" type="number" step="any" value="100" required></label>
+    <label>Retail grupo<input class="filter-select" name="gr" type="number" step="any" value="100" required></label>
+    <label>Objetivo grupo<input class="filter-select" name="go" type="number" step="any" value="100" required></label>
+    <button class="btn-glass btn-primary" type="submit">Simular</button>
+  </form>
+  <p id="simResultado" class="section-subtitle" style="margin-top:14px"></p>
+</section>
+
+</div>
+</main>
+<script src="/js/auth-client.js"></script>
+<script src="/js/shared.js?v=5"></script>
+<script src="/js/sidebar.js?v=12"></script>
+<script src="/js/topbar.js?v=27"></script>
+<script src="/js/mobile-nav.js"></script>
+<script src="/js/bonos.js?v=1"></script>
+</body>
+</html>

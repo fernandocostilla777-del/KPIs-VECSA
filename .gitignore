@@ -27,6 +27,9 @@ backend/data/leads-source.xlsx
 backend/data/planes-uploads/
 backend/data/lista-precios-images/*
 !backend/data/lista-precios-images/.gitkeep
+backend/data/private/*
+!backend/data/private/*.example.json
+!backend/data/private/.gitkeep
 data/users.json
 data/sales-goals.json
 data/financiamiento-notes.json

@@ -1,0 +1,28 @@
+{
+  "anio": 2026,
+  "trimestres": {
+    "3": {
+      "trimestre": 3,
+      "grupo": { "objetivo": 380 },
+      "bev": { "objetivo": 12 },
+      "inventario": { "objetivoAntiguedad": 10 },
+      "meses": [
+        { "mes": 7, "etiqueta": "JUL", "objetivo": 40 },
+        { "mes": 8, "etiqueta": "AGO", "objetivo": 40 },
+        { "mes": 9, "etiqueta": "SEP", "objetivo": 40 }
+      ]
+    },
+    "4": {
+      "trimestre": 4,
+      "nota": "Carta ficticia. La carta real del T4 todavía no está capturada.",
+      "grupo": { "objetivo": 140 },
+      "bev": { "objetivo": 15 },
+      "inventario": { "objetivoAntiguedad": 10 },
+      "meses": [
+        { "mes": 10, "etiqueta": "OCT", "objetivo": 45, "cerrado": true },
+        { "mes": 11, "etiqueta": "NOV", "objetivo": 45, "cerrado": false },
+        { "mes": 12, "etiqueta": "DIC", "objetivo": 50, "cerrado": false }
+      ]
+    }
+  }
+}

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Inventario | VECSA</title>
+<title>Inventario | VECSA BMW</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="/css/dashboard.css?v=165" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=173" rel="stylesheet"/>
 <script src="/js/theme.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -509,16 +509,16 @@ Unidad
 <figure class="vendidos-resumen__chart">
 <figcaption class="vendidos-resumen__cap">
 <span>
-<span id="vrCarlineTitulo">Utilidad por carline</span>
-<small id="vrCarlineSub">Ordenado por unidades vendidas</small>
+<span id="vrCarlineTitulo">Utilidad por marca</span>
+<small id="vrCarlineSub">BMW, MINI y Motorrad</small>
 </span>
 <div class="vendidos-resumen__mode" id="vendCarlineMode" role="group" aria-label="Qué compara el gráfico">
 <button type="button" data-vend-mode="unidad" class="is-active" aria-pressed="true">Por unidad</button>
 <button type="button" data-vend-mode="total" aria-pressed="false">Total</button>
 </div>
 </figcaption>
-<p class="vendidos-resumen__mode-hint" id="vrCarlineModeHint">Por unidad compara la neta promedio. Total suma la neta de todas las unidades del carline.</p>
-<div class="vendidos-resumen__canvas" id="vendCarlineBox"><canvas id="chartVendCarline" aria-label="Utilidad neta por carline"></canvas></div>
+<p class="vendidos-resumen__mode-hint" id="vrCarlineModeHint">Por unidad compara la neta promedio de cada marca. Total suma la neta de todas las unidades de la marca.</p>
+<div class="vendidos-resumen__canvas" id="vendCarlineBox"><canvas id="chartVendCarline" aria-label="Utilidad neta por marca"></canvas></div>
 <p class="vendidos-resumen__nota hidden" id="vendCarlineNota"></p>
 </figure>
 </div>
@@ -546,7 +546,7 @@ Unidad
 <div class="table-header-row" style="flex-wrap:wrap;gap:12px;align-items:flex-end">
 <div>
 <h3 class="section-title" style="margin-bottom:4px">Cierre de unidades vendidas</h3>
-<p class="section-subtitle" style="margin:0">Detalle de margen por VIN · subtotal → costo neto (con bonif.) → nota crédito s/IVA → utilidad bruta → comisión E.V. → gastos extra → plan piso → ingresos F&I → utilidad neta → % retención</p>
+<p class="section-subtitle" style="margin:0">Detalle de margen por VIN · los bonos, incluido el táctico, suman a la utilidad cuando el movimiento nombra el número de serie. Gastos extra son los cargos internos del VIN (PDI, refacciones y accesorios) y restan a la utilidad neta.</p>
 </div>
 <label class="filter-field" style="margin:0">
 <span class="filter-label">Mes de venta</span>
@@ -578,6 +578,8 @@ Unidad
 <col class="col-pago"/>
 <col class="col-version"/>
 <col class="col-vin"/>
+<col class="col-tipo"/>
+<col class="col-bonos"/>
 <col class="col-precio"/>
 <col class="col-costo"/>
 <col class="col-nota"/>
@@ -594,6 +596,8 @@ Unidad
 <th title="Contado o crédito">Contado / crédito</th>
 <th>Versión / Paquete</th>
 <th>VIN</th>
+<th>Tipo de venta</th>
+<th class="cell-num">Bonos</th>
 <th class="cell-num">Subtotal</th>
 <th class="cell-num">Costo neto (con bonif.)</th>
 <th class="cell-num">Nota crédito (s/IVA)</th>
@@ -607,7 +611,7 @@ Unidad
 </tr>
 </thead>
 <tbody id="vendidosSlowBody">
-<tr><td colspan="13" class="empty-row">Cargando vendidos…</td></tr>
+<tr><td colspan="15" class="empty-row">Cargando vendidos…</td></tr>
 </tbody>
 </table>
 </div>
@@ -675,7 +679,7 @@ Unidad
 <button type="button" class="kpi-card kpi-card--blue kpi-card--interactive" data-semi-kpi="total" aria-expanded="false" title="Clic para ver unidades">
 <div class="kpi-card-head"><span class="kpi-title">Unidades en stock</span><span class="material-symbols-outlined kpi-icon">directions_car</span></div>
 <div id="semiTotal" class="kpi-value">—</div>
-<p class="kpi-subtitle">Situación SFIS · físico seminuevo</p>
+<p class="kpi-subtitle" id="semiStockSub">Físico seminuevo</p>
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 <div class="kpi-accent"></div>
 </button>
@@ -742,7 +746,7 @@ Unidad
 <div class="table-header-row">
 <div>
 <h3 class="section-title" style="margin-bottom:4px">Análisis de rotación</h3>
-<p class="section-subtitle" style="margin:0">Facturas históricas seminuevos (ADE_VTAFI tipo U) · últimos 12 meses · días de adquisición a factura</p>
+<p class="section-subtitle" id="semiRotacionSub" style="margin:0">Facturas de seminuevos · últimos 12 meses · días de adquisición a factura</p>
 </div>
 <span id="semiTableCount" class="top-bar-meta">—</span>
 </div>
@@ -1100,12 +1104,12 @@ Unidad
 </main>
 <script src="/js/auth-client.js"></script>
 <script src="/js/shared.js?v=8"></script>
-<script src="/js/sidebar.js?v=11"></script>
-<script src="/js/topbar.js?v=23"></script>
+<script src="/js/sidebar.js?v=12"></script>
+<script src="/js/topbar.js?v=27"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/kpi-insights.js?v=13"></script>
 <script src="/js/assistant-bubble.js?v=6"></script>
 <script src="/js/analisisComercial.js?v=20"></script>
-<script src="/js/inventory.js?v=99"></script>
+<script src="/js/inventory.js?v=110"></script>
 </body>
 </html>

@@ -3,7 +3,8 @@
  * Fuente: SER_VEHICULO con VEH_SITUACION = 'SFIS'
  * Días desde VEH_SFECADQUI (fecha de adquisición del usado).
  */
-const { query } = require('../db');
+const { query, getPool, sql } = require('../db');
+const { tabla } = require('../incadea/queries');
 
 const AGEING_DAYS = 60;
 const AGEING_CRITICAL_DAYS = 90;
@@ -350,7 +351,287 @@ function emptyRotacion(meses = 12, error = null) {
   };
 }
 
-async function getInventorySeminuevos({ mesesRotacion = 12 } = {}) {
+function empresaIncadea() {
+  try {
+    const { leerPrivado } = require('../incadea/privateStore');
+    const mapeo = leerPrivado('incadea-mapeo', { opcional: true, porDefecto: null });
+    const empresa = mapeo?.data?.empresa;
+    if (empresa) return String(empresa).trim();
+  } catch {
+    /* usa el nombre confirmado en esta base */
+  }
+  return 'Vecsa Hidalgo';
+}
+
+function marcaIncadea(codigo) {
+  const marca = String(codigo || '').trim().toUpperCase();
+  if (marca === 'BMW' || marca === 'BMWI') return 'BMW';
+  if (marca === 'MINI') return 'MINI';
+  if (marca === 'MOTO' || marca === 'MOTORRAD') return 'Motorrad';
+  if (marca === 'OTRAS' || marca === 'OTRO') return 'Otras';
+  return marca || 'Sin marca';
+}
+
+function diasDesdeIso(iso, today) {
+  const partes = String(iso || '').split('-').map(Number);
+  if (partes.length !== 3 || partes.some((n) => !n)) return null;
+  const entrada = new Date(partes[0], partes[1] - 1, partes[2]);
+  if (Number.isNaN(entrada.getTime())) return null;
+  return Math.max(0, Math.round((today - entrada) / 86400000));
+}
+
+/**
+ * Stock usado en Incadea: estatus 1 y grupo de inventario VU.
+ * El costo es el importe de la última factura de compra del VIN, sin IVA.
+ */
+async function loadIncadeaSeminuevosUnits() {
+  const empresa = empresaIncadea();
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const compra = tabla(empresa, 'Purch_ Invoice Line');
+  const compraHdr = tabla(empresa, 'Purch_ Invoice Header');
+  const toma = tabla(empresa, 'Posted Sales Trade-In');
+  const pool = await getPool();
+  const result = await pool.request().query(`
+    SELECT
+      LTRIM(RTRIM(v.[VIN])) AS vin,
+      LTRIM(RTRIM(ISNULL(v.[Model], ''))) AS modelo,
+      LTRIM(RTRIM(ISNULL(CONVERT(varchar(10), v.[Model Year]), ''))) AS anio,
+      LTRIM(RTRIM(ISNULL(v.[Make Code], ''))) AS marcaCode,
+      LTRIM(RTRIM(ISNULL(v.[Location Code], ''))) AS ubicacion,
+      v.[Mileage] AS km,
+      CASE
+        WHEN v.[Purchase Receipt Date] > '19900101' THEN CONVERT(varchar(10), v.[Purchase Receipt Date], 23)
+        WHEN v.[Purchase Invoice Date] > '19900101' THEN CONVERT(varchar(10), v.[Purchase Invoice Date], 23)
+        ELSE NULL
+      END AS fechaAdquisicion,
+      ISNULL(compra.importe, 0) AS precioToma,
+      CASE WHEN toma.doc IS NULL THEN 0 ELSE 1 END AS tomaUsn
+    FROM ${vehiculo} v
+    OUTER APPLY (
+      SELECT TOP 1 pl.[Amount] AS importe
+      FROM ${compra} pl
+      INNER JOIN ${compraHdr} ph ON ph.[No_] = pl.[Document No_]
+      WHERE LTRIM(RTRIM(pl.[VIN])) = LTRIM(RTRIM(v.[VIN]))
+        AND pl.[Type] = 2
+        AND pl.[Quantity] > 0
+        AND ISNULL(pl.[Amount], 0) > 0
+      ORDER BY ph.[Posting Date] DESC, pl.[Document No_] DESC
+    ) compra
+    OUTER APPLY (
+      SELECT TOP 1 ti.[Document No_] AS doc
+      FROM ${toma} ti
+      WHERE LTRIM(RTRIM(ti.[VIN])) = LTRIM(RTRIM(v.[VIN]))
+        AND ti.[Document Type] = 2
+      ORDER BY ti.[Document No_] DESC
+    ) toma
+    WHERE v.[Vehicle Status] = 1
+      AND v.[Inventory Posting Group] LIKE 'VU%'
+  `);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return (result.recordset || []).map((row) => {
+    const precioToma = round2(row.precioToma);
+    const daysInStock = diasDesdeIso(row.fechaAdquisicion, today);
+    const marcaCode = clean(row.marcaCode);
+    return {
+      vin: clean(row.vin),
+      modelo: clean(row.modelo) || 'Sin modelo',
+      anio: clean(row.anio),
+      marcaCode,
+      marca: marcaIncadea(marcaCode),
+      situacion: 'VU',
+      situacionLabel: 'Físico seminuevo',
+      ubicacion: clean(row.ubicacion),
+      noInventario: null,
+      km: row.km != null && row.km !== '' ? Number(row.km) : null,
+      tomaUsn: Number(row.tomaUsn) === 1,
+      precioToma,
+      precioVentaIva: null,
+      precioCompraGuia: null,
+      precioVentaGuia: null,
+      importeAdquisicion: precioToma,
+      importeVenta: null,
+      margenEstimado: null,
+      margenVsGuia: null,
+      fechaAdquisicion: clean(row.fechaAdquisicion),
+      fechaOperacion: null,
+      fechaAltaControl: null,
+      daysInStock,
+      ageingBucket: ageingBucket(daysInStock),
+      envejecida: daysInStock != null && daysInStock >= AGEING_DAYS,
+      critica: daysInStock != null && daysInStock >= AGEING_CRITICAL_DAYS,
+      color: 'Sin color',
+    };
+  }).sort((a, b) => (b.daysInStock || 0) - (a.daysInStock || 0) || String(a.vin).localeCompare(String(b.vin)));
+}
+
+/**
+ * Rotación: factura de seminuevo (grupo VU) menos la fecha de recepción de compra.
+ * Una nota de crédito del mismo VIN anula la factura. Importe sin IVA.
+ */
+async function loadIncadeaRotacionHistorica({ meses = 12 } = {}) {
+  const months = Math.max(1, Math.min(36, Number(meses) || 12));
+  const empresa = empresaIncadea();
+  const factura = tabla(empresa, 'Sales Invoice Line');
+  const facturaHdr = tabla(empresa, 'Sales Invoice Header');
+  const credito = tabla(empresa, 'Sales Credit Memo Line');
+  const cliente = tabla(empresa, 'Customer');
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('meses', sql.Int, months)
+    .query(`
+      SELECT
+        LTRIM(RTRIM(l.[VIN])) AS vin,
+        l.[Document No_] AS factura,
+        CONVERT(varchar(10), h.[Posting Date], 23) AS fechaFactura,
+        l.[Quantity] AS qty,
+        CAST(1 AS int) AS signo,
+        l.[Amount] AS importe,
+        LTRIM(RTRIM(ISNULL(v.[Model], ''))) AS modelo,
+        LTRIM(RTRIM(ISNULL(v.[Make Code], ''))) AS marcaCode,
+        LTRIM(RTRIM(ISNULL(CONVERT(varchar(10), v.[Model Year]), ''))) AS anio,
+        LTRIM(RTRIM(ISNULL(v.[Location Code], ''))) AS ubicacion,
+        CASE
+          WHEN v.[Purchase Receipt Date] > '19900101' THEN CONVERT(varchar(10), v.[Purchase Receipt Date], 23)
+          WHEN v.[Purchase Invoice Date] > '19900101' THEN CONVERT(varchar(10), v.[Purchase Invoice Date], 23)
+          ELSE NULL
+        END AS fechaAdquisicion
+      FROM ${factura} l
+      INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
+      LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+      LEFT JOIN ${vehiculo} v ON LTRIM(RTRIM(v.[VIN])) = LTRIM(RTRIM(l.[VIN]))
+      WHERE h.[Posting Date] >= DATEADD(month, -@meses, CAST(GETDATE() AS date))
+        AND l.[Type] = 2
+        AND l.[Item Type] = 2
+        AND l.[Quantity] > 0
+        AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
+        AND l.[Gen_ Prod_ Posting Group] LIKE 'VU%'
+        AND ISNULL(h.[Customer Group Code], '') <> 'ICC'
+        AND ISNULL(c.[Customer Posting Group], '') <> 'C-ICC'
+      UNION ALL
+      SELECT
+        LTRIM(RTRIM(l.[VIN])) AS vin,
+        l.[Document No_] AS factura,
+        CONVERT(varchar(10), l.[Posting Date], 23) AS fechaFactura,
+        l.[Quantity] AS qty,
+        CAST(-1 AS int) AS signo,
+        0 AS importe,
+        NULL, NULL, NULL, NULL, NULL
+      FROM ${credito} l
+      WHERE l.[Posting Date] >= DATEADD(month, -@meses, CAST(GETDATE() AS date))
+        AND l.[Type] = 2
+        AND l.[Item Type] = 2
+        AND l.[Quantity] > 0
+        AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
+        AND l.[Gen_ Prod_ Posting Group] LIKE 'VU%'
+    `);
+
+  const porVin = new Map();
+  for (const row of result.recordset || []) {
+    const vin = String(row.vin || '').trim();
+    if (!vin) continue;
+    let acc = porVin.get(vin);
+    if (!acc) {
+      acc = { neto: 0, row: null };
+      porVin.set(vin, acc);
+    }
+    acc.neto += Number(row.signo) * Number(row.qty || 0);
+    if (Number(row.signo) > 0 && (!acc.row || String(row.fechaFactura) >= String(acc.row.fechaFactura))) {
+      acc.row = row;
+    }
+  }
+
+  const facturas = [];
+  for (const acc of porVin.values()) {
+    if (acc.neto <= 0 || !acc.row) continue;
+    const row = acc.row;
+    const dias = diasDesdeIso(row.fechaAdquisicion, new Date(`${row.fechaFactura}T12:00:00`));
+    if (dias == null || dias > 2000) continue;
+    const importe = round2(row.importe);
+    const marcaCode = clean(row.marcaCode);
+    facturas.push({
+      kind: 'factura',
+      factura: clean(row.factura),
+      fechaFactura: clean(row.fechaFactura),
+      vin: clean(row.vin),
+      modelo: clean(row.modelo) || 'Sin modelo',
+      carline: clean(row.modelo) || 'Sin modelo',
+      anio: clean(row.anio),
+      marcaCode,
+      marca: marcaIncadea(marcaCode),
+      color: 'Sin color',
+      ubicacion: clean(row.ubicacion),
+      fechaAdquisicion: clean(row.fechaAdquisicion),
+      diasRotacion: dias,
+      daysInStock: dias,
+      precioVentaIva: null,
+      importeFactura: importe,
+      precioToma: null,
+      precioCompraGuia: null,
+      precioVentaGuia: null,
+      margenEstimado: null,
+      margenVsGuia: null,
+      situacion: 'U',
+      situacionLabel: 'Facturada',
+      envejecida: dias >= AGEING_DAYS,
+      critica: dias >= AGEING_CRITICAL_DAYS,
+      ageingBucket: ageingBucket(dias),
+    });
+  }
+  facturas.sort((a, b) => String(b.fechaFactura).localeCompare(String(a.fechaFactura)) || String(a.vin).localeCompare(String(b.vin)));
+
+  const diasProm = facturas.length
+    ? Math.round(facturas.reduce((s, f) => s + f.diasRotacion, 0) / facturas.length)
+    : 0;
+  const sumImporte = round2(facturas.reduce((s, f) => s + Number(f.importeFactura || 0), 0));
+  return {
+    meses: months,
+    fuente: 'Incadea · facturas grupo VU',
+    criterioDias: 'recepción de compra → fecha de factura',
+    totalFacturas: facturas.length,
+    diasPromedio: diasProm,
+    importeTotal: sumImporte,
+    ticketPromedio: facturas.length ? round2(sumImporte / facturas.length) : 0,
+    envejecidas: facturas.filter((f) => f.envejecida).length,
+    facturas,
+  };
+}
+
+async function getIncadeaSeminuevos({ mesesRotacion = 12 } = {}) {
+  const months = Math.max(1, Math.min(36, Number(mesesRotacion) || 12));
+  const [unitsResult, rotResult] = await Promise.allSettled([
+    loadIncadeaSeminuevosUnits(),
+    loadIncadeaRotacionHistorica({ meses: months }),
+  ]);
+  if (unitsResult.status === 'rejected') throw unitsResult.reason;
+  const units = unitsResult.value || [];
+  const rotacionHistorica = rotResult.status === 'fulfilled'
+    ? rotResult.value
+    : emptyRotacion(months, rotResult.reason?.message || rotResult.reason);
+  if (rotResult.status === 'rejected') {
+    console.error('[seminuevos] rotación Incadea:', rotResult.reason?.message || rotResult.reason);
+  }
+  return {
+    fuente: 'incadea',
+    criterio: {
+      situacion: 'Estatus usado · grupo VU',
+      fuente: 'Incadea Vehicle',
+      diasDesde: 'Purchase Receipt Date',
+      valorAdq: 'Última factura de compra, sin IVA',
+      valorVenta: 'Sin precio de lista en la unidad',
+      envejecida: `${AGEING_DAYS}+ días`,
+      critica: `${AGEING_CRITICAL_DAYS}+ días`,
+      rotacion: 'Facturas grupo VU · recepción de compra → factura',
+    },
+    summary: summarize(units),
+    units,
+    rotacionHistorica,
+  };
+}
+
+async function getInventorySeminuevosDms({ mesesRotacion = 12 } = {}) {
   const months = Math.max(1, Math.min(36, Number(mesesRotacion) || 12));
   const [unitsResult, rotResult] = await Promise.allSettled([
     loadSeminuevosUnits(),
@@ -387,6 +668,17 @@ async function getInventorySeminuevos({ mesesRotacion = 12 } = {}) {
     units,
     rotacionHistorica,
   };
+}
+
+async function getInventorySeminuevos(opts = {}) {
+  try {
+    return await getInventorySeminuevosDms(opts);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+    console.warn('[seminuevos] El esquema anterior no está en esta base. Se usa Incadea:', msg);
+    return getIncadeaSeminuevos(opts);
+  }
 }
 
 module.exports = {

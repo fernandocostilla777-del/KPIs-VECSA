@@ -1,0 +1,104 @@
+{
+  "anio": 2026,
+  "marca": "BMW",
+  "notaInterna": "Valores ficticios de ejemplo. No corresponden al documento confidencial de bonos.",
+  "maximoTotal": 900000,
+  "volumen": {
+    "maximoTrimestral": 300000,
+    "umbralCompleto": 1,
+    "umbralParcial": 0.8,
+    "factorCompleto": 1,
+    "factorParcial": 0.5,
+    "alcanceGrupoMinimo": 1,
+    "factorSiGrupoNoAlcanza": 0,
+    "bandas": [
+      { "desde": 1, "factor": 1 },
+      { "desde": 0.9, "factor": 0.5 },
+      { "desde": 0, "factor": 0 }
+    ]
+  },
+  "orientacion": {
+    "maximo": 200000,
+    "mercadotecnia": { "peso": 0.3, "umbralUsoFondo": 0.85 },
+    "voc": { "peso": 0.25, "incidenciasCancelan": 2 },
+    "retailStandards": { "peso": 0.25 },
+    "entrenamiento": { "peso": 0.2 }
+  },
+  "calidad": {
+    "maximo": 150000,
+    "bev": { "peso": 0.4, "umbral": 1 },
+    "inventarios": {
+      "peso": 0.6,
+      "umbralAntiguedad": 0.1,
+      "unidadesVdcMinimas": 4,
+      "mesInicioVdc": 2
+    }
+  },
+  "penalizaciones": {
+    "aplicacionMensual": false,
+    "conceptos": [
+      { "id": "cbsDigitalTools", "etiqueta": "CBS Digital Tools", "monto": 8000 },
+      { "id": "vehiculosDemo", "etiqueta": "Vehículos Demo", "monto": 12000 },
+      { "id": "lineaCredito", "etiqueta": "Línea de crédito operativa", "monto": 10000 },
+      { "id": "conversionVentas", "etiqueta": "Conversión a ventas", "monto": 6000 }
+    ]
+  },
+  "topes": {
+    "demo": 40000,
+    "loaner": 25000,
+    "topManagement": 35000,
+    "tactic": 15000
+  },
+  "escenarios": [
+    {
+      "id": 1,
+      "nombre": "Escenario 1",
+      "meses": [
+        { "retail": 110, "objetivo": 100, "cerrado": true },
+        { "retail": 110, "objetivo": 100, "cerrado": true },
+        { "retail": 110, "objetivo": 100, "cerrado": true }
+      ],
+      "grupo": { "real": 100, "objetivo": 100 }
+    },
+    {
+      "id": 2,
+      "nombre": "Escenario 2",
+      "meses": [
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 80, "objetivo": 100, "cerrado": true },
+        { "retail": 130, "objetivo": 100, "cerrado": true }
+      ],
+      "grupo": { "real": 100, "objetivo": 100 }
+    },
+    {
+      "id": 3,
+      "nombre": "Escenario 3",
+      "meses": [
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 80, "objetivo": 100, "cerrado": true },
+        { "retail": 90, "objetivo": 100, "cerrado": true }
+      ],
+      "grupo": { "real": 100, "objetivo": 100 }
+    },
+    {
+      "id": 4,
+      "nombre": "Escenario 4",
+      "meses": [
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 40, "objetivo": 100, "cerrado": true }
+      ],
+      "grupo": { "real": 100, "objetivo": 100 }
+    },
+    {
+      "id": 5,
+      "nombre": "Escenario 5",
+      "meses": [
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 100, "objetivo": 100, "cerrado": true },
+        { "retail": 100, "objetivo": 100, "cerrado": true }
+      ],
+      "grupo": { "real": 80, "objetivo": 100 }
+    }
+  ]
+}

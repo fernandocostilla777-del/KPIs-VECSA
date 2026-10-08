@@ -23,6 +23,8 @@
   let ventasDrawerUi = null;
   let lastYtd = null;
   let ytdQuarters = new Set([1, 2, 3, 4]);
+  let ytdMarca = 'todas';
+  const YTD_MARCA_LABEL = { bmw: 'BMW', mini: 'MINI', moto: 'Motorrad' };
   let tomasQuarters = new Set([1, 2, 3, 4]);
   let lastTomasMensual = null;
   let lastMixAutos = null;
@@ -975,7 +977,7 @@
     if (!els.topBarSummary || !resumen) return;
     const ventas = resumen.totalVentas ?? 0;
     const sofia = resumen.totalNotificacionesEntrega ?? 0;
-    els.topBarSummary.textContent = `${ventas} ventas · ${sofia} entregas SOFIA`;
+    els.topBarSummary.textContent = `${ventas} ventas · ${sofia} Motorrad`;
   }
 
   function formatGoalCounts(actual, goal, unitLabel) {
@@ -1202,8 +1204,8 @@
       data: {
         labels: porMesFlotillaRetail.labels,
         datasets: [
-          { label: 'Retail', data: porMesFlotillaRetail.retail, backgroundColor: chartColors.secondary },
-          { label: 'Flotillas', data: porMesFlotillaRetail.flotilla, backgroundColor: chartColors.tertiary },
+          { label: 'Ventas BMW', data: porMesFlotillaRetail.retail, backgroundColor: chartColors.secondary },
+          { label: 'Ventas MINI', data: porMesFlotillaRetail.flotilla, backgroundColor: chartColors.tertiary },
         ],
       },
       options: chartOptions({ scales: { x: { stacked: true }, y: { stacked: true } } }),
@@ -1253,7 +1255,7 @@
         type: 'bar',
         data: {
           labels: comparativo.porMesEntregasSofia.labels,
-          datasets: [{ label: 'Entregas SOFIA', data: comparativo.porMesEntregasSofia.data, backgroundColor: chartColors.secondary }],
+          datasets: [{ label: 'Ventas Motorrad', data: comparativo.porMesEntregasSofia.data, backgroundColor: chartColors.secondary }],
         },
         options: chartOptions({ plugins: { legend: { display: false } } }),
       });
@@ -1273,6 +1275,41 @@
       },
       options: chartOptions(),
     });
+  }
+
+  function ytdVista(comparativo) {
+    if (!comparativo) return null;
+    const marca = comparativo.porMarca?.[ytdMarca];
+    if (!marca || ytdMarca === 'todas') return comparativo;
+    return {
+      ...comparativo,
+      totalActual: marca.totalActual,
+      totalAnterior: marca.totalAnterior,
+      variacion: marca.variacion,
+      labels: marca.labels,
+      series: marca.series,
+      trimestres: marca.trimestres,
+    };
+  }
+
+  function syncYtdMarcaChips() {
+    const marcas = lastYtd?.porMarca || {};
+    const hay = ['bmw', 'mini', 'moto'].some((key) => {
+      const item = marcas[key];
+      return item && ((Number(item.totalActual) || 0) + (Number(item.totalAnterior) || 0)) > 0;
+    });
+    if (els.ytdMarcaChips) els.ytdMarcaChips.hidden = !hay;
+    if (!hay) ytdMarca = 'todas';
+    els.ytdMarcaChips?.querySelectorAll('[data-ytd-marca]').forEach((btn) => {
+      const on = btn.dataset.ytdMarca === ytdMarca;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function selectYtdMarca(marca) {
+    ytdMarca = marca === 'todas' || YTD_MARCA_LABEL[marca] ? marca : 'todas';
+    if (lastYtd) renderYtdChart(lastYtd, { keepQuarters: true });
   }
 
   function syncYtdQuarterChips() {
@@ -1311,11 +1348,13 @@
     lastYtd = comparativoYtd;
     if (!keepQuarters) initYtdQuartersFromData(comparativoYtd);
     syncYtdQuarterChips();
+    syncYtdMarcaChips();
+    const vista = ytdVista(comparativoYtd);
 
     const {
       anioActual, anioAnterior, corte, totalActual, totalAnterior, variacion,
       labels: flatLabels, series: flatSeries, mesEnCursoExcluido, trimestres,
-    } = comparativoYtd;
+    } = vista;
 
     els.ytdLabelActual.textContent = `${anioActual}`;
     els.ytdLabelAnterior.textContent = `${anioAnterior}`;
@@ -1366,9 +1405,13 @@
       labels = monthPoints.map((m) => (multiQ ? `${m.quarterLabel} ${m.label}` : m.label));
       actual = monthPoints.map((m) => Number(m.actual || 0));
       anterior = monthPoints.map((m) => Number(m.anterior || 0));
+      const marcaTxt = YTD_MARCA_LABEL[ytdMarca] ? ` ${YTD_MARCA_LABEL[ytdMarca]}` : '';
+      const baseYtd = comparativoYtd.fuente === 'incadea'
+        ? `Facturas nuevas${marcaTxt} al ${corteFmt} · ${anioActual} vs ${anioAnterior}`
+        : `Mensual${marcaTxt} al ${corteFmt} · ${anioActual} vs ${anioAnterior}`;
       els.ytdSubtitle.textContent = mesEnCursoExcluido
-        ? `Mensual al ${corteFmt} · ${anioActual} vs ${anioAnterior} · mes en curso excluido`
-        : `Mensual al ${corteFmt} · ${anioActual} vs ${anioAnterior}`;
+        ? `${baseYtd} · mes en curso excluido`
+        : baseYtd;
     } else {
       // Fallback si el API aún no trae trimestres
       labels = flatLabels || [];
@@ -1526,7 +1569,7 @@
         data: {
           labels: porCanal.map((x) => x.label),
           datasets: [{
-            label: 'Ventas retail',
+            label: 'Ventas BMW',
             data: porCanal.map((x) => x.count),
             backgroundColor: porCanal.map((x) => (CANAL_COLORS && CANAL_COLORS[x.label]) || (chartColors && chartColors.slate) || '#94a3b8'),
           }],
@@ -1549,7 +1592,9 @@
       });
     }
 
-    try {
+    if (!document.getElementById('secMixAutos')) {
+      destroyChart('mixAutos', 'chartMixAutos');
+    } else try {
       const vsMeta = Array.isArray(lineasVsMetaActual) && lineasVsMetaActual.length
         ? buildMixVsObjetivoCarline(lineasVsMetaActual)
         : null;
@@ -1927,19 +1972,19 @@
   function ventasKpiMeta(key) {
     const map = {
       retail: {
-        title: 'Ventas retail',
+        title: 'Ventas BMW',
         hint: 'Menudeo del periodo. FLOTGMF cuenta aquí si el contrato CRM no es flotilla.',
         icon: 'storefront',
         card: () => els.kpiCardRetail,
       },
       flotilla: {
-        title: 'Flotillas',
+        title: 'Ventas MINI',
         hint: 'FLOT y FLOTGMF con contrato flotilla. El menudeo facturado en FLOTGMF va a retail.',
         icon: 'local_shipping',
         card: () => els.kpiCardFlotillas,
       },
       sofia: {
-        title: 'Notificaciones SOFIA',
+        title: 'Ventas Motorrad',
         hint: 'Timbrados SOFIA por fecha de registro · sin FLOT · FLOTGMF solo si contrato AO ≠ flotilla',
         icon: 'notifications_active',
         card: () => els.kpiCardEntregasSofia,
@@ -2550,13 +2595,13 @@
       if (!titleEl) return;
       if ((currentMeta.kpi === 'retail' || currentMeta.kpi === 'flotilla')
         && activeFilter?.dim === 'canal') {
-        const base = currentMeta.kpi === 'flotilla' ? 'Flotillas' : 'Ventas retail';
+        const base = currentMeta.kpi === 'flotilla' ? 'Ventas MINI' : 'Ventas BMW';
         titleEl.textContent = `${base} · ${activeFilter.label || activeFilter.value}`;
         return;
       }
       if ((currentMeta.kpi === 'retail' || currentMeta.kpi === 'flotilla')
         && activeFilter?.dim === 'vendedor') {
-        const base = currentMeta.kpi === 'flotilla' ? 'Flotillas' : 'Ventas retail';
+        const base = currentMeta.kpi === 'flotilla' ? 'Ventas MINI' : 'Ventas BMW';
         titleEl.textContent = `${base} · ${activeFilter.label || activeFilter.value}`;
         return;
       }
@@ -2726,7 +2771,7 @@
           ${block('Usuarios que timbraron', 'vendedor', usuarios)}
           <div class="ops-orders-drawer__group">
             <h5>Componentes</h5>
-            <div class="ops-orders-drawer__row"><span class="lbl">Entregas SOFIA</span><span class="val">${entregas}</span></div>
+            <div class="ops-orders-drawer__row"><span class="lbl">Ventas Motorrad</span><span class="val">${entregas}</span></div>
             <div class="ops-orders-drawer__row"><span class="lbl">Objetivo entregas</span><span class="val">${metaEntregas ?? '—'}</span></div>
             <div class="ops-orders-drawer__row"><span class="lbl">Avance (C-1)</span><span class="val">${escapeHtml(String(avancePct))}</span></div>
             <div class="ops-orders-drawer__row"><span class="lbl">Brecha vs objetivo (C-1.1)</span><span class="val">${brecha == null ? '—' : brecha}</span></div>
@@ -2859,7 +2904,7 @@
       if (currentMeta.kpi === 'sofia') {
         bodyEl.innerHTML = `
           <div class="ops-orders-drawer__list-head">
-            <span>Entregas SOFIA</span><span>${filtered.length}</span>
+            <span>Ventas Motorrad</span><span>${filtered.length}</span>
           </div>
           ${filtered.map((r) => `
             <div class="ops-orders-drawer__item" style="cursor:default">
@@ -2969,7 +3014,7 @@
 
       bodyEl.innerHTML = `
         <div class="ops-orders-drawer__list-head">
-          <span>${currentMeta.kpi === 'flotilla' ? 'Flotillas' : 'Retail'}</span><span>${filtered.length}</span>
+          <span>${currentMeta.kpi === 'flotilla' ? 'Ventas MINI' : 'Ventas BMW'}</span><span>${filtered.length}</span>
         </div>
         ${filtered.map((r) => `
           <div class="ops-orders-drawer__item" style="cursor:default">
@@ -3357,9 +3402,6 @@
     if (activeSalesTab === 'afluencia' && window.AfluenciaVentas?.load) {
       sideLoads.push(window.AfluenciaVentas.load(fechaInicio, fechaFin, { force: true }));
     }
-    if (activeSalesTab === 'comisiones' && window.ComisionesVentas?.load) {
-      sideLoads.push(window.ComisionesVentas.load(fechaInicio, fechaFin, { force: true }));
-    }
     // CMI comercial vive repartido en Ventas / Financiamiento (no en un tab único).
     if (window.AnalisisComercial?.load) {
       sideLoads.push(window.AnalisisComercial.load(fechaInicio, fechaFin, { force: fresh }));
@@ -3447,7 +3489,9 @@
 
       await Promise.all([
         fetchSharedGoals().catch((err) => console.warn('[Goals]', err.message)),
-        fetchLineasVsMeta().catch((err) => console.warn('[Mix vs meta]', err.message)),
+        document.getElementById('secMixAutos')
+          ? fetchLineasVsMeta().catch((err) => console.warn('[Mix vs meta]', err.message))
+          : Promise.resolve(null),
         ensureApartadasInResumen(data).catch((err) => console.warn('[Carry over]', err.message)),
       ]);
       renderCarryOverKpi();
@@ -3470,7 +3514,9 @@
 
       const modo = resumen.mostrarComparativoMensual ? ' · comparativo mensual' : '';
       if (!quiet) {
-        setStatus(`${resumen.totalVentas} ventas · ${resumen.totalNotificacionesEntrega ?? 0} entregas SOFIA${modo}`);
+        setStatus(data.fuente === 'incadea'
+          ? `${resumen.totalVentas} ventas Incadea · BMW ${resumen.totalRetail ?? 0} · MINI ${resumen.totalFlotillas ?? 0} · Motorrad ${resumen.totalNotificacionesEntrega ?? 0}${modo}`
+          : `${resumen.totalVentas} ventas · ${resumen.totalNotificacionesEntrega ?? 0} Motorrad${modo}`);
       }
       Dashboard.updateCompactFilterLabels();
       if (!quiet) compactFilters?.closeAll?.();
@@ -3606,7 +3652,7 @@
         entregasSofia: entregasActuales,
       });
 
-      // Leads/Afluencia/Comisiones ya se dispararon al inicio con el periodo seleccionado.
+      // Leads y Afluencia ya se dispararon al inicio con el periodo seleccionado.
       syncSofiaLiveMode(data.sofiaLiveUpdate);
     } catch (err) {
       console.error('[Sales]', err);
@@ -3777,6 +3823,7 @@
       ytdYoyBadge: document.getElementById('ytdYoyBadge'),
       ytdYoyPrior: document.getElementById('ytdYoyPrior'),
       ytdQuarterChips: document.getElementById('ytdQuarterChips'),
+      ytdMarcaChips: document.getElementById('ytdMarcaChips'),
       carlineUtilidadBody: document.getElementById('carlineUtilidadBody'),
       carlineUtilidadSubtitle: document.getElementById('carlineUtilidadSubtitle'),
       chartsMensuales: document.getElementById('chartsMensuales'),
@@ -3817,13 +3864,11 @@
       || hash === 'trafico'
       || hash === 'tráfico'
     ) return 'afluencia';
-    if (hash === 'comisiones' || hash === 'comision' || hash === 'comisiones-fi') return 'comisiones';
     const params = new URLSearchParams(location.search);
     const tab = String(params.get('tab') || '').toLowerCase();
     if (tab === 'financiamiento' || tab === 'financiera' || tab === 'fi') return 'financiamiento';
     if (tab === 'leads' || tab === 'lead' || tab === 'oportunidades') return 'leads';
     if (tab === 'afluencia' || tab === 'trafico' || tab === 'tráfico' || tab === 'mtk' || tab === 'marketing') return 'afluencia';
-    if (tab === 'comisiones' || tab === 'comision') return 'comisiones';
     return 'ventas';
   }
 
@@ -3851,9 +3896,6 @@
           fiCtx.entregasSofia,
           { force: true },
         ));
-      }
-      if (activeSalesTab !== 'comisiones' && window.ComisionesVentas?.load && !window.ComisionesVentas.hasCache?.(fechaInicio, fechaFin)) {
-        tasks.push(window.ComisionesVentas.load(fechaInicio, fechaFin));
       }
       Promise.allSettled(tasks).catch(() => {});
     };
@@ -3909,18 +3951,10 @@
       return;
     }
 
-    if (tab === 'comisiones' && window.ComisionesVentas?.load) {
-      if (window.ComisionesVentas.hasCache?.(fi, ff)) {
-        await window.ComisionesVentas.load(fi, ff);
-        return;
-      }
-      void window.ComisionesVentas.load(fi, ff);
-      return;
-    }
   }
 
   async function switchSalesTab(tab) {
-    const next = ['financiamiento', 'leads', 'afluencia', 'comisiones'].includes(tab) ? tab : 'ventas';
+    const next = ['financiamiento', 'leads', 'afluencia'].includes(tab) ? tab : 'ventas';
     activeSalesTab = next;
     if (next !== 'ventas') {
       ventasDrawerUi?.close?.();
@@ -3936,7 +3970,6 @@
     const panelFi = document.getElementById('panelVentasFinanciamiento');
     const panelLd = document.getElementById('panelVentasLeads');
     const panelAf = document.getElementById('panelVentasAfluencia');
-    const panelCom = document.getElementById('panelVentasComisiones');
     if (panelVentas) {
       panelVentas.classList.toggle('hidden', next !== 'ventas');
       panelVentas.hidden = next !== 'ventas';
@@ -3953,10 +3986,6 @@
       panelAf.classList.toggle('hidden', next !== 'afluencia');
       panelAf.hidden = next !== 'afluencia';
     }
-    if (panelCom) {
-      panelCom.classList.toggle('hidden', next !== 'comisiones');
-      panelCom.hidden = next !== 'comisiones';
-    }
 
     const title = document.querySelector('.top-bar-title');
     if (title) {
@@ -3964,9 +3993,7 @@
         ? 'Financiamiento'
         : (next === 'leads'
           ? 'Leads'
-          : (next === 'afluencia'
-            ? 'Afluencia'
-            : (next === 'comisiones' ? 'Comisiones' : 'Ventas de Unidades')));
+          : (next === 'afluencia' ? 'Afluencia' : 'Ventas de Unidades'));
     }
 
     if (next === 'financiamiento') {
@@ -3984,10 +4011,6 @@
         history.replaceState(null, '', `${location.pathname}${location.search}#afluencia`);
       }
       window.AfluenciaVentas?.setInnerTab?.(wantsMtk ? 'mtk' : 'general');
-    } else if (next === 'comisiones') {
-      if (location.hash !== '#comisiones') {
-        history.replaceState(null, '', `${location.pathname}${location.search}#comisiones`);
-      }
     } else if (
       location.hash === '#financiamiento' || location.hash === '#financiera' || location.hash === '#fi'
       || location.hash === '#leads' || location.hash === '#lead' || location.hash === '#oportunidades'
@@ -4038,6 +4061,12 @@
       const btn = e.target.closest('[data-ytd-quarter]');
       if (!btn) return;
       toggleYtdQuarter(btn.dataset.ytdQuarter);
+    });
+
+    els.ytdMarcaChips?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-ytd-marca]');
+      if (!btn) return;
+      selectYtdMarca(btn.dataset.ytdMarca);
     });
 
     els.tomasQuarterChips?.addEventListener('click', (e) => {
@@ -4128,7 +4157,6 @@
       window.FinanciamientoVentas?.init?.();
       window.LeadsVentas?.init?.();
       window.AfluenciaVentas?.init?.();
-      window.ComisionesVentas?.init?.();
       compactFilters = Dashboard.initCompactFilters();
       setDefaultDates();
       Dashboard.setActivePresetChip('mes-actual');

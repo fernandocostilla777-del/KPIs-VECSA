@@ -1,0 +1,32 @@
+{
+  "empresa": "Vecsa Hidalgo",
+  "tablas": {
+    "vehiculo": "Vehicle",
+    "movimiento": "Vehicle Ledger Entry"
+  },
+  "columnas": {
+    "vin": "VIN",
+    "numero": "No_",
+    "modeloCodigo": "Model No_",
+    "modelo": "Model",
+    "grupo": "Inventory Posting Group",
+    "estatus": "Vehicle Status",
+    "entryType": "Entry Type",
+    "fecha": "Posting Date",
+    "costo": "Total Cost",
+    "ventaVigente": "Current Sales Ledger Entry",
+    "vehiculoNo": "Vehicle No_"
+  },
+  "entryType": { "compra": 0, "venta": 2 },
+  "estatus": { "nuevo": 0, "usado": 1, "demo": 2, "vendido": 3, "evento": 5 },
+  "grupos": {
+    "demo": "^VD",
+    "usado": "^VU",
+    "marca": { "B": "BMW", "M": "MINI", "T": "Motorrad" }
+  },
+  "ventaVigenteValor": 1,
+  "basePago": "costo_compra",
+  "bev": { "regexModelo": "" },
+  "antiguedadDias": 120,
+  "fechaVaciaNav": "1753-01-01"
+}

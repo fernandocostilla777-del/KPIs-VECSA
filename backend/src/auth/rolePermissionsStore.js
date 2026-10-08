@@ -64,6 +64,13 @@ const PAGE_CATALOG = [
     apiPrefixes: ['/crm', '/seguimiento-360'],
   },
   {
+    id: 'bonos',
+    label: 'Sistema de Bonos',
+    description: 'Bonos BMW 2026: volumen, orientación al cliente, calidad y penalizaciones.',
+    homePath: '/bonos.html',
+    apiPrefixes: ['/bonos'],
+  },
+  {
     id: 'admin',
     label: 'Administración',
     description: 'Usuarios, roles, alertas y prorrateo.',
@@ -76,7 +83,7 @@ const PAGE_BY_ID = Object.fromEntries(PAGE_CATALOG.map((p) => [p.id, p]));
 const VALID_PAGE_IDS = new Set(PAGE_CATALOG.map((p) => p.id));
 
 const HOME_PRIORITY = [
-  'overview', 'sales', 'post-sales', 'inventory', 'contabilidad', 'forecast', 'seguimiento', 'admin',
+  'overview', 'sales', 'post-sales', 'inventory', 'contabilidad', 'forecast', 'seguimiento', 'bonos', 'admin',
 ];
 
 function ensureDir() {

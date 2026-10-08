@@ -1,6 +1,6 @@
-# KPIs VECSA
+# KPIs VECSA — BMW / MINI / Motorrad
 
-Dashboard ejecutivo conectado a SQL Server (GMOFARRIL): ventas, contabilidad, inventario, post-venta y pronóstico.
+Dashboard ejecutivo conectado a SQL Server: ventas, contabilidad, inventario, post-venta, pronóstico y Sistema de Bonos 2026.
 
 ## Estructura del proyecto
 
@@ -112,6 +112,24 @@ Detalle: [`desktop/README.md`](./desktop/README.md).
 | `/forecast.html` | Pronóstico (histórico gráfico = 12 meses) |
 | `/assistant.html` | Asistente IA |
 | `/admin.html` | Usuarios (rol administración) |
+| `/bonos.html` | Sistema de Bonos 2026 (BMW). Acceso: Administración, Dirección, Gerencia Comercial y Mercadotecnia |
+
+## Sistema de Bonos e Incadea
+
+Los porcentajes reales no se versionan. Viven en `backend/data/private/` (ignorado por git). En el repo solo hay plantillas `*.example.json`.
+
+```bash
+node backend/scripts/test-bonos.js      # 22 pruebas del motor
+node backend/scripts/test-incadea.js    # 16 pruebas, sin base de datos
+```
+
+La capa Incadea es de solo lectura (`INCADEA_DB_*` en `backend/.env`). Estructura, hipótesis y pendientes: **[docs/INCADEA-ESTRUCTURA.md](./docs/INCADEA-ESTRUCTURA.md)**.
+
+Clonado:
+
+```bash
+git clone https://github.com/fernandocostilla777-del/KPIs-VECSA.git
+```
 
 Detalle de avance, APIs y criterios de negocio: **[DOCUMENTACION.md](./DOCUMENTACION.md)**.  
 Plan de fases / roadmap: **[PLAN_PROYECTO.md](./PLAN_PROYECTO.md)**.  

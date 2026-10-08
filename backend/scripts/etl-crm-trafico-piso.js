@@ -43,14 +43,49 @@ function excelTime(value) {
   return text;
 }
 
+function normHeader(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
 function findSheet(workbook) {
-  return workbook.SheetNames.find((name) => {
-    const n = String(name || '')
+  const names = workbook.SheetNames.map((name) => ({
+    name,
+    n: String(name || '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-    return n.includes('trafico') && n.includes('piso');
+      .toLowerCase(),
+  }));
+  return (
+    names.find((s) => s.n.includes('trafico') && s.n.includes('piso'))
+    || names.find((s) => s.n.includes('afluencia'))
+  )?.name;
+}
+
+function headerIndex(header) {
+  const idx = {};
+  (header || []).forEach((cell, i) => {
+    const key = normHeader(cell);
+    if (key && idx[key] == null) idx[key] = i;
   });
+  return idx;
+}
+
+function cell(idx, row, ...names) {
+  for (const name of names) {
+    const at = idx[name];
+    if (at != null) return row[at];
+  }
+  return null;
+}
+
+function esSi(value) {
+  const s = normHeader(value);
+  return s === 'SI' || s === 'S';
 }
 
 function run() {
@@ -61,6 +96,8 @@ function run() {
   const sheetName = findSheet(workbook);
   if (!sheetName) throw new Error('No se encontró la hoja "Trafico piso"');
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: null });
+  const headers = headerIndex(rows[0]);
+  const layoutNuevo = headers['TIPO DE CITA'] != null;
 
   const db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
@@ -115,46 +152,81 @@ function run() {
     const row = rows[i];
     if (!row || row.every((value) => value == null || String(value).trim() === '')) continue;
 
-    const fecha = serialToIso(row[3]);
-    const cliente = clean(row[6]);
-    const reconciliacion = clean(row[19]);
+    const fecha = serialToIso(layoutNuevo ? cell(headers, row, 'FECHA') : row[3]);
+    const cliente = clean(layoutNuevo ? cell(headers, row, 'NOMBRE DEL CLIENTE *', 'NOMBRE DEL CLIENTE', 'CLIENTE') : row[6]);
+    const reconciliacion = clean(layoutNuevo ? cell(headers, row, 'TIPO DE CITA') : row[19]);
+    const tipoVenta = layoutNuevo ? clean(cell(headers, row, 'TIPO DE VENTA')) : null;
+    const ventaSi = layoutNuevo && esSi(cell(headers, row, 'VENTA'));
     // Requiere fecha o al menos tipo de reconciliación + cliente/asesor
     if (!fecha && !reconciliacion) {
       skipped += 1;
       continue;
     }
 
-    data.push([
-      clean(row[0]),
-      clean(row[1]),
-      clean(row[2]),
-      fecha,
-      excelTime(row[4]),
-      clean(row[5]),
-      cliente,
-      clean(row[7]),
-      clean(row[8]),
-      clean(row[9]),
-      clean(row[10]),
-      clean(row[11]),
-      clean(row[12]),
-      clean(row[13]),
-      clean(row[14]),
-      clean(row[15]),
-      clean(row[16]),
-      clean(row[17]),
-      clean(row[18]),
-      reconciliacion,
-      clean(row[20]),
-      clean(row[22]),
-      clean(row[25]),
-      clean(row[26]),
-      clean(row[27]),
-      clean(row[28]),
-      clean(row[29]),
-      clean(row[32])?.toUpperCase() || null,
-      clean(row[35]),
-    ]);
+    const campos = layoutNuevo
+      ? [
+        clean(cell(headers, row, 'FUERZA DE VENTAS')),
+        clean(cell(headers, row, 'MARCA')),
+        clean(cell(headers, row, 'MES')),
+        fecha,
+        excelTime(cell(headers, row, 'HORA DE INGRESO A PISO')),
+        clean(cell(headers, row, 'ASESOR')),
+        cliente,
+        clean(cell(headers, row, 'GENERO')),
+        clean(cell(headers, row, 'EDAD')),
+        clean(cell(headers, row, 'TELEFONO')),
+        clean(cell(headers, row, 'CORREO')),
+        clean(cell(headers, row, 'AUTO DE INTERES')),
+        clean(cell(headers, row, 'COLOR')),
+        clean(cell(headers, row, 'VERSION')),
+        clean(cell(headers, row, 'FORMA DE CONTACTO')),
+        clean(cell(headers, row, 'MEDIO DE CONTACTO')),
+        clean(cell(headers, row, 'SUBMEDIO DE CONTACTO')),
+        tipoVenta,
+        'Afluencia',
+        reconciliacion,
+        null,
+        clean(cell(headers, row, 'TIPO DE PLAN')),
+        esSi(cell(headers, row, 'PRUEBA DE MANEJO')) ? 'SI' : clean(cell(headers, row, 'PRUEBA DE MANEJO')),
+        esSi(cell(headers, row, 'SOLICITUD')) ? 'SI' : clean(cell(headers, row, 'SOLICITUD')),
+        clean(cell(headers, row, 'ID DE CRM')),
+        clean(cell(headers, row, 'FOLIO DE TARJETA')),
+        clean(cell(headers, row, 'HOSTES QUE REGISTRO', 'HOSTESS QUE REGISTRO')),
+        null,
+        ventaSi ? 'VENTA' : null,
+      ]
+      : [
+        clean(row[0]),
+        clean(row[1]),
+        clean(row[2]),
+        fecha,
+        excelTime(row[4]),
+        clean(row[5]),
+        cliente,
+        clean(row[7]),
+        clean(row[8]),
+        clean(row[9]),
+        clean(row[10]),
+        clean(row[11]),
+        clean(row[12]),
+        clean(row[13]),
+        clean(row[14]),
+        clean(row[15]),
+        clean(row[16]),
+        clean(row[17]),
+        clean(row[18]),
+        reconciliacion,
+        clean(row[20]),
+        clean(row[22]),
+        clean(row[25]),
+        clean(row[26]),
+        clean(row[27]),
+        clean(row[28]),
+        clean(row[29]),
+        clean(row[32])?.toUpperCase() || null,
+        clean(row[35]),
+      ];
+    data.push(campos);
   }
 
   db.transaction((records) => records.forEach((record) => insert.run(record)))(data);

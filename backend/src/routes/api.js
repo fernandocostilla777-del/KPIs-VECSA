@@ -31,6 +31,7 @@ const { isAuthEnabled } = require('../auth/session');
 const { requireSession } = require('../auth/middleware');
 const objetivosResultadosRoutes = require('./objetivosResultados');
 const seguimiento360Routes = require('./seguimiento360');
+const bonosRoutes = require('./bonos');
 
 const router = express.Router();
 
@@ -43,6 +44,9 @@ router.use('/objetivos-resultados', objetivosResultadosRoutes);
 
 /** Expediente y KPIs de Seguimiento 360 (CRM + DMS). */
 router.use('/seguimiento-360', seguimiento360Routes);
+
+/** Sistema de Bonos 2026 (BMW). */
+router.use('/bonos', bonosRoutes);
 
 router.get('/ventas/objetivos/historico', (_req, res) => {
   try {

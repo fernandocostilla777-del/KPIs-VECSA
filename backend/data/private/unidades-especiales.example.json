@@ -1,0 +1,9 @@
+{
+  "loaner": ["WBAEXAMPLELOANER01"],
+  "topManagement": ["WBAEXAMPLETOP0001"],
+  "tactic": ["WBAEXAMPLETACTIC1"],
+  "empleado": [],
+  "flotilla": [],
+  "demo": [],
+  "bloqueoSuministro": ["WBAEXAMPLEBLOQ0001"]
+}

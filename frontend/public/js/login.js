@@ -24,6 +24,14 @@
     setHidden(el, !msg);
   }
 
+  function shakeCard() {
+    const card = document.getElementById('loginCard');
+    if (!card) return;
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+  }
+
   function wirePasswordToggle(btnId, input, iconAttr) {
     const btn = document.getElementById(btnId);
     const icon = btn?.querySelector(`[${iconAttr}]`);
@@ -93,6 +101,7 @@
       window.location.href = target;
     } catch (err) {
       showAlert(loginErrorEl, err.message || 'No se pudo iniciar sesión.');
+      shakeCard();
     } finally {
       btnLogin.disabled = false;
     }
@@ -104,6 +113,7 @@
     const username = document.getElementById('resetUsername').value.trim();
     if (!username) {
       showAlert(resetErrorEl, 'Escribe tu usuario para enviar el código.');
+      shakeCard();
       return;
     }
     btnRequestCode.disabled = true;
@@ -113,6 +123,7 @@
       document.getElementById('resetCode')?.focus();
     } catch (err) {
       showAlert(resetErrorEl, err.message);
+      shakeCard();
     } finally {
       btnRequestCode.disabled = false;
     }
@@ -127,14 +138,17 @@
     const confirm = document.getElementById('resetPassword2').value;
     if (!/^\d{6}$/.test(code)) {
       showAlert(resetErrorEl, 'El código debe tener 6 dígitos.');
+      shakeCard();
       return;
     }
     if (password.length < 8) {
       showAlert(resetErrorEl, 'La contraseña debe tener al menos 8 caracteres.');
+      shakeCard();
       return;
     }
     if (password !== confirm) {
       showAlert(resetErrorEl, 'Las contraseñas no coinciden.');
+      shakeCard();
       return;
     }
     btnResetPassword.disabled = true;
@@ -147,6 +161,7 @@
       passwordInput.focus();
     } catch (err) {
       showAlert(resetErrorEl, err.message);
+      shakeCard();
     } finally {
       btnResetPassword.disabled = false;
     }

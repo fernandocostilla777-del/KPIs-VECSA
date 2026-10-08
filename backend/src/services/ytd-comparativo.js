@@ -101,26 +101,50 @@ function buildYtdQuery() {
   `;
 }
 
-function buildComparativoYtd(rows, ranges) {
-  const { anioActual, anioAnterior, mesCorte, corte } = ranges;
-  const maxMonth = Math.min(12, Math.max(1, Number(mesCorte) || 12));
-  const maxQ = Math.ceil(maxMonth / 3);
+function mapaMeses() {
+  return Object.fromEntries(Array.from({ length: 12 }, (_, i) => [i + 1, 0]));
+}
 
-  const actualPorMes = Object.fromEntries(
-    Array.from({ length: 12 }, (_, i) => [i + 1, 0])
-  );
-  const anteriorPorMes = Object.fromEntries(
-    Array.from({ length: 12 }, (_, i) => [i + 1, 0])
-  );
+function buildComparativoYtd(rows, ranges) {
+  const { anioActual, anioAnterior } = ranges;
+  const actualPorMes = mapaMeses();
+  const anteriorPorMes = mapaMeses();
+  const marcas = {
+    bmw: { actual: mapaMeses(), anterior: mapaMeses() },
+    mini: { actual: mapaMeses(), anterior: mapaMeses() },
+    moto: { actual: mapaMeses(), anterior: mapaMeses() },
+  };
 
   for (const row of rows) {
     const mes = Number(row.mes);
     const anio = Number(row.anio);
     const cnt = Number(row.cnt) || 0;
+    const maxMonth = Math.min(12, Math.max(1, Number(ranges.mesCorte) || 12));
     if (mes < 1 || mes > 12 || mes > maxMonth) continue;
-    if (anio === anioActual) actualPorMes[mes] = cnt;
-    if (anio === anioAnterior) anteriorPorMes[mes] = cnt;
+    if (anio === anioActual) actualPorMes[mes] += cnt;
+    if (anio === anioAnterior) anteriorPorMes[mes] += cnt;
+    const marca = String(row.marca || '').toLowerCase();
+    if (!marcas[marca]) continue;
+    if (anio === anioActual) marcas[marca].actual[mes] += cnt;
+    if (anio === anioAnterior) marcas[marca].anterior[mes] += cnt;
   }
+
+  const porMarca = {
+    bmw: armarSerieYtd(marcas.bmw.actual, marcas.bmw.anterior, ranges),
+    mini: armarSerieYtd(marcas.mini.actual, marcas.mini.anterior, ranges),
+    moto: armarSerieYtd(marcas.moto.actual, marcas.moto.anterior, ranges),
+  };
+
+  return {
+    ...armarSerieYtd(actualPorMes, anteriorPorMes, ranges),
+    porMarca,
+  };
+}
+
+function armarSerieYtd(actualPorMes, anteriorPorMes, ranges) {
+  const { anioActual, anioAnterior, mesCorte, corte } = ranges;
+  const maxMonth = Math.min(12, Math.max(1, Number(mesCorte) || 12));
+  const maxQ = Math.ceil(maxMonth / 3);
 
   // Serie plana (compatibilidad con clientes/IA existentes)
   const labels = Array.from({ length: maxMonth }, (_, i) => MESES[i]);
@@ -177,18 +201,38 @@ function buildComparativoYtd(rows, ranges) {
   };
 }
 
+async function comparativoDesdeIncadea(ranges) {
+  const { getIncadeaConteosPorMes } = require('./incadeaVentas');
+  const rows = await getIncadeaConteosPorMes({
+    inicioActual: parseDateInput(ranges.inicioActual),
+    finActual: parseDateInput(ranges.finActual),
+    inicioAnterior: parseDateInput(ranges.inicioAnterior),
+    finAnterior: parseDateInput(ranges.finAnterior),
+  });
+  return {
+    ...buildComparativoYtd(rows, ranges),
+    fuente: 'incadea',
+  };
+}
+
 async function getComparativoYtd(fechaFin) {
   const ranges = buildYtdRanges(fechaFin);
-  const pool = await getPool();
-
-  const result = await pool.request()
-    .input('ytdInicioActual', sql.Date, parseDateInput(ranges.inicioActual))
-    .input('ytdFinActual', sql.Date, parseDateInput(ranges.finActual))
-    .input('ytdInicioAnterior', sql.Date, parseDateInput(ranges.inicioAnterior))
-    .input('ytdFinAnterior', sql.Date, parseDateInput(ranges.finAnterior))
-    .query(buildYtdQuery());
-
-  return buildComparativoYtd(result.recordset, ranges);
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('ytdInicioActual', sql.Date, parseDateInput(ranges.inicioActual))
+      .input('ytdFinActual', sql.Date, parseDateInput(ranges.finActual))
+      .input('ytdInicioAnterior', sql.Date, parseDateInput(ranges.inicioAnterior))
+      .input('ytdFinAnterior', sql.Date, parseDateInput(ranges.finAnterior))
+      .query(buildYtdQuery());
+    const built = buildComparativoYtd(result.recordset, ranges);
+    if ((built.totalActual + built.totalAnterior) > 0) return built;
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+    console.warn('[ventas] YoY del esquema anterior no está en esta base. Se usa Incadea:', msg);
+  }
+  return comparativoDesdeIncadea(ranges);
 }
 
 module.exports = {

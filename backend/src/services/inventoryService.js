@@ -1246,7 +1246,9 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
     return inventoryCache.payload;
   }
 
-  const rows = await query(`
+  let rows;
+  try {
+    rows = await query(`
     SELECT
       SER_VEHICULO.VEH_TIPOAUTO,
       UNI_CATALOGO.UNC_FAMILIA,
@@ -1319,6 +1321,13 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
     WHERE SER_VEHICULO.VEH_SITUACION IN ${INVENTORY_SITUATIONS}
     ORDER BY SER_VEHICULO.VEH_TIPOAUTO
   `);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+    console.warn('[inventory] El esquema anterior no está en esta base. Se usa Incadea:', msg);
+    const { getIncadeaInventarioNuevos } = require('./incadeaInventario');
+    rows = await getIncadeaInventarioNuevos();
+  }
 
   const units = enrichUnitsWithPruebasManejo(rows.map(mapRow));
   const previasMap = await loadPreviasBySeries(units.map((u) => u.serie));
@@ -1791,7 +1800,9 @@ async function getVendidosAnalisis({ fechaInicio, fechaFin } = {}) {
     throw err;
   }
 
-  const rows = await query(`
+  let rows;
+  try {
+    rows = await query(`
     ${VENTAS_BASE_CTE}
     SELECT
       UPPER(LTRIM(RTRIM(ISNULL(NULLIF(cat.UNC_FAMILIA, ''), 'SIN FAMILIA')))) AS carline,
@@ -1932,6 +1943,13 @@ async function getVendidosAnalisis({ fechaInicio, fechaFin } = {}) {
     WHERE CONVERT(date, v.VTE_FECHDOCTO, 103) BETWEEN CONVERT(date, @fechaInicio, 23) AND CONVERT(date, @fechaFin, 23)
     ORDER BY CONVERT(date, v.VTE_FECHDOCTO, 103) DESC, v.VTE_SERIE
   `, { fechaInicio, fechaFin });
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+    console.warn('[inventory] Cierre del esquema anterior no está en esta base. Se usa Incadea:', msg);
+    const { getIncadeaCierreVendidos } = require('./incadeaInventario');
+    return getIncadeaCierreVendidos({ fechaInicio, fechaFin });
+  }
 
   const seen = new Set();
   const unique = [];

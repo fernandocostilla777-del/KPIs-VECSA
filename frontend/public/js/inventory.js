@@ -20,6 +20,7 @@ let ageingSearch = '';
 let vendidosRows = [];
 let vendidosCarlineFilters = [];
 let vendidosCarlineFilter = 'all';
+let vendidosMarcaFilter = 'all';
 let vendidosSearch = '';
 let vendidosLoading = false;
 let intHistLoading = false;
@@ -1730,6 +1731,8 @@ function costoNetoConBonif(r) {
 }
 
 function notaCreditoSinIva(r) {
+  const directa = Number(r.notaCargoSinIva);
+  if (Number.isFinite(directa) && directa > 0) return roundMoneyUi(directa);
   const nota = Number(r.notaCargo || 0);
   return nota > 0 ? roundMoneyUi(nota / 1.16) : 0;
 }
@@ -1766,6 +1769,19 @@ function renderComisionEvCell(r, fmt) {
 }
 
 function extrasBreakdownFromRow(r, fmt) {
+  if (Array.isArray(r.gastosDetalle)) {
+    const extras = Number(r.gastosAdicionales || 0);
+    return {
+      extras,
+      items: r.gastosDetalle
+        .map((d) => ({
+          label: d.label || 'Gasto',
+          value: Number(d.importe || 0),
+          hint: d.doc || '',
+        }))
+        .filter((d) => d.value),
+    };
+  }
   const previa = Number(r.costoPrevia || 0);
   const publicidad = Number(r.costoPublicidad || r.costoMercadotecnia || 0);
   const entrega = Number(r.costoEntrega || 0);
@@ -1781,6 +1797,51 @@ function extrasBreakdownFromRow(r, fmt) {
     { label: 'Gasolina', value: gasolina, hint: litros ? `${litros} L × $23.39` : 'Sin litros en tabla' },
   ];
   return { previa, publicidad, entrega, gasolina, litros, gastosLibro, extras, items };
+}
+
+function renderTipoVentaCell(r) {
+  const tipos = String(r.tipoVenta || 'Menudeo').split(' · ').map((t) => t.trim()).filter(Boolean);
+  const principal = tipos[0] || 'Menudeo';
+  const resto = tipos.slice(1).join(' · ');
+  return `<strong>${escapeHtml(principal)}</strong>${resto ? `<span class="ageing-slow-hint">${escapeHtml(resto)}</span>` : ''}`;
+}
+
+function renderBonosCell(r, fmt) {
+  const monto = Number(r.bonos || 0);
+  const detalle = Array.isArray(r.bonosDetalle) ? r.bonosDetalle : [];
+  const notas = (Array.isArray(r.notasCliente) ? r.notasCliente : [])
+    .filter((d) => d.tipo === 'NC sobreprecio');
+  if (!monto && !detalle.length && !notas.length) return '<span class="ageing-slow-hint">Sin bono</span>';
+  const items = [
+    ...detalle.map((d) => ({
+      label: d.tipo || 'Bono',
+      value: Number(d.importe || 0),
+      hint: d.doc || '',
+    })),
+    ...notas.map((d) => ({
+      label: d.texto || d.tipo || 'Nota de crédito',
+      value: Number(d.importe || 0),
+      hint: [d.tipo, d.doc].filter(Boolean).join(' · '),
+    })),
+  ];
+  const marcas = [...new Set(notas.map((d) => d.tipo).filter(Boolean))];
+  const payload = encodeURIComponent(JSON.stringify({
+    kicker: 'Bonos aplicados',
+    totalLabel: 'Total bonos',
+    hint: marcas.length ? 'La nota de crédito no suma al bono' : '',
+    vin: r.vin || '',
+    carline: r.carline || '',
+    version: r.version || '',
+    extras: monto,
+    items,
+  }));
+  const aviso = marcas.length
+    ? `<span class="ageing-slow-hint">${escapeHtml(marcas.join(' · '))}</span>`
+    : '<span class="ageing-slow-hint">Ver detalle</span>';
+  return `<button type="button" class="ageing-extras-trigger" data-extras-payload="${payload}" aria-haspopup="dialog" aria-expanded="false">
+    <strong>${monto ? fmt.money(monto) : 'Sin bono'}</strong>
+    ${aviso}
+  </button>`;
 }
 
 function renderExtrasCell(r, fmt) {
@@ -1972,6 +2033,11 @@ function renderVendidosFichaCell(r) {
     unidadesPrev: r.comisionEvUnidadesPrev,
     mesPrev: r.comisionEvMesPrev || '',
     notaFolio: r.notaCargoFolio || '',
+    apoyoTactico: Number(r.apoyoTactico || 0),
+    apoyoTacticoDoc: r.apoyoTacticoDoc || '',
+    bonos: Number(r.bonos || 0),
+    bonosDetalle: Array.isArray(r.bonosDetalle) ? r.bonosDetalle : [],
+    notasCliente: Array.isArray(r.notasCliente) ? r.notasCliente : [],
   }));
   return `<button type="button" class="ageing-ficha-trigger" data-ficha-payload="${payload}" aria-haspopup="dialog" aria-expanded="false" title="${escapeHtml(vin)}">
     <strong class="ageing-slow-vin-text">${escapeHtml(vin)}</strong>
@@ -2021,6 +2087,10 @@ function openFichaPopover(anchor) {
       ${fichaRow('Días en inventario', data.daysInStock == null ? '—' : `${data.daysInStock} días`, data.fechaRemision ? `Remisión ${fmtDate(data.fechaRemision)}` : '')}
       ${fichaRow('Comisión E.V.', data.comisionPct == null ? '—' : `${data.comisionPct}%`, `${udsLabel} uds menudeo ${data.mesPrev || 'mes ant.'}`)}
       ${fichaRow('Nota de crédito', data.notaFolio || 'Sin nota')}
+      ${(Array.isArray(data.bonosDetalle) && data.bonosDetalle.length)
+        ? data.bonosDetalle.map((item) => fichaRow(item.tipo || 'Bono', Dashboard.fmt.money(Number(item.importe || 0)), item.doc || '')).join('')
+        : fichaRow('Bonos', 'Sin bono')}
+      ${(Array.isArray(data.notasCliente) ? data.notasCliente : []).map((item) => fichaRow(item.texto || item.tipo || 'Nota de crédito', Dashboard.fmt.money(Number(item.importe || 0)), [item.tipo, item.doc].filter(Boolean).join(' · '))).join('')}
     </ul>
     <div class="extras-popover__total ${data.isDemo ? 'is-demo' : ''}">
       <span>${data.isDemo ? 'Unidad demo' : 'Unidad de piso'}</span>
@@ -2167,13 +2237,16 @@ function vendidosUnitLabel(label) {
 
 function filteredVendidosRows() {
   let rows = vendidosRows;
+  if (vendidosMarcaFilter && vendidosMarcaFilter !== 'all') {
+    rows = rows.filter((r) => vendidosMarcaDe(r) === vendidosMarcaFilter);
+  }
   if (vendidosCarlineFilter && vendidosCarlineFilter !== 'all') {
     rows = rows.filter((r) => String(r.carline || '') === vendidosCarlineFilter);
   }
   const q = String(vendidosSearch || '').trim().toLowerCase();
   if (!q) return rows;
   return rows.filter((r) => [
-    r.vin, r.carline, r.version, r.catalogo, r.paquete, r.factura, r.notaCargoFolio,
+    r.vin, r.carline, r.marca, r.version, r.catalogo, r.paquete, r.factura, r.notaCargoFolio,
     r.vendedor, r.cliente, r.tipoVenta, r.formaPago,
   ].some((v) => String(v || '').toLowerCase().includes(q)));
 }
@@ -2217,7 +2290,7 @@ function renderVendidosTable(rows = filteredVendidosRows()) {
   const list = Array.isArray(rows) ? rows : [];
   const meta = document.getElementById('vendidosSearchMeta');
   if (meta) {
-    const unitOn = vendidosCarlineFilter !== 'all';
+    const unitOn = vendidosCarlineFilter !== 'all' || vendidosMarcaFilter !== 'all';
     const filtered = Boolean(vendidosSearch.trim()) || unitOn;
     meta.classList.toggle('hidden', !filtered);
     if (filtered) {
@@ -2231,7 +2304,7 @@ function renderVendidosTable(rows = filteredVendidosRows()) {
     const empty = vendidosLoading
       ? 'Cargando vendidos…'
       : (vendidosRows.length ? 'Sin coincidencias para el filtro.' : 'Sin ventas en el mes seleccionado.');
-    body.innerHTML = `<tr><td colspan="13" class="empty-row">${empty}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="15" class="empty-row">${empty}</td></tr>`;
     return;
   }
   body.innerHTML = list.map((r) => {
@@ -2256,14 +2329,17 @@ function renderVendidosTable(rows = filteredVendidosRows()) {
     const costoCell = costoNeto == null
       ? '—'
       : `<strong>${fmt.money(costoNeto)}</strong>${bonif > 0 ? `<span class="ageing-slow-hint">− Bonif. ${fmt.money(bonif)}</span>` : ''}`;
+    const bonos = Number(r.bonos || 0);
     return `<tr class="${rowClass}">
       <td class="vendidos-pago">${escapeHtml(tipoLabel)}</td>
       <td class="ageing-slow-version" title="${escapeHtml(version)}"><span>${escapeHtml(version)}</span></td>
       <td class="ageing-slow-vin">${renderVendidosFichaCell(r)}</td>
+      <td class="vendidos-tipo">${renderTipoVentaCell(r)}</td>
+      <td class="cell-num ageing-slow-bonos">${renderBonosCell(r, fmt)}</td>
       <td class="cell-num">${r.precio ? fmt.money(r.precio) : '—'}${Number(r.isan || 0) > 0 ? `<span class="ageing-slow-hint">− ISAN ${fmt.money(r.isan)}</span>` : ''}</td>
       <td class="cell-num">${costoCell}</td>
       <td class="cell-num ageing-slow-nota">${notaCell}</td>
-      <td class="cell-num ageing-slow-utilidad"><strong>${utilidad == null ? '—' : fmt.money(utilidad)}</strong>${utilidad != null && utilidad < 0 ? '<span class="vendidos-bajo-costo">Bajo costo</span>' : ''}</td>
+      <td class="cell-num ageing-slow-utilidad"><strong>${utilidad == null ? '—' : fmt.money(utilidad)}</strong>${bonos ? `<span class="ageing-slow-hint">Incluye bonos ${fmt.money(bonos)}</span>` : ''}${utilidad != null && utilidad < 0 ? '<span class="vendidos-bajo-costo">Bajo costo</span>' : ''}</td>
       <td class="cell-num ageing-slow-comision">${renderComisionEvCell(r, fmt)}</td>
       <td class="cell-num ageing-slow-extras">${renderExtrasCell(r, fmt)}</td>
       <td class="cell-num ageing-slow-piso">${pisoCell}</td>
@@ -2946,36 +3022,37 @@ function renderVendidosCascada(c, netaN) {
   });
 }
 
-function vendidosCarlineItems(rows) {
+function vendidosMarcaDe(r) {
+  const marca = String(r.marca || '').trim();
+  if (marca && marca !== 'Sin marca') return marca;
+  const carline = String(r.carline || '').trim();
+  if (/^mini$/i.test(carline)) return 'MINI';
+  if (/motorrad/i.test(carline)) return 'Motorrad';
+  if (carline && carline !== 'Sin familia') return 'BMW';
+  return 'Sin marca';
+}
+
+function vendidosMarcaItems(rows) {
   const map = new Map();
   for (const r of rows) {
-    const key = r.carline || 'Sin familia';
-    const cur = map.get(key) || { carline: key, n: 0, neta: 0, bajo: 0 };
+    const key = vendidosMarcaDe(r);
+    const cur = map.get(key) || { marca: key, n: 0, neta: 0, bajo: 0 };
     cur.n += 1;
     cur.neta += Number(r.utilidadNeta || 0);
     if (r.utilidadPromedio != null && Number(r.utilidadPromedio) < 0) cur.bajo += 1;
     map.set(key, cur);
   }
-  const all = [...map.values()].map((v) => ({ ...v, prom: v.n ? v.neta / v.n : 0, otros: false, problema: false }));
-  const principales = all
-    .filter((v) => v.n >= VENDIDOS_OTROS_MAX)
-    .sort((a, b) => b.n - a.n || String(a.carline).localeCompare(String(b.carline), 'es'));
-  const chicos = all.filter((v) => v.n < VENDIDOS_OTROS_MAX);
-  if (chicos.length) {
-    const n = chicos.reduce((s, v) => s + v.n, 0);
-    const neta = chicos.reduce((s, v) => s + v.neta, 0);
-    principales.push({
-      carline: null,
-      etiqueta: `Otros (${n} unidad${n === 1 ? '' : 'es'})`,
-      n,
-      neta,
-      prom: n ? neta / n : 0,
-      bajo: chicos.reduce((s, v) => s + v.bajo, 0),
-      otros: true,
-      problema: false,
+  const orden = ['BMW', 'MINI', 'Motorrad'];
+  return [...map.values()]
+    .map((v) => ({ ...v, prom: v.n ? v.neta / v.n : 0, otros: false, problema: false }))
+    .sort((a, b) => {
+      const ia = orden.indexOf(a.marca);
+      const ib = orden.indexOf(b.marca);
+      if (ia === -1 && ib === -1) return b.n - a.n || a.marca.localeCompare(b.marca, 'es');
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
     });
-  }
-  return principales;
 }
 
 function vendidosCarlineColor(item, avg, porUnidad) {
@@ -2998,25 +3075,25 @@ function renderVendidosCarlineChart() {
   const porUnidad = vendidosCarlineMode !== 'total';
   if (hint) {
     hint.textContent = porUnidad
-      ? 'Por unidad muestra la neta promedio. El orden sigue por unidades vendidas.'
-      : 'Total suma la utilidad neta de todas las unidades del carline. El orden sigue por unidades vendidas.';
+      ? 'Por unidad compara la neta promedio de cada marca. El orden es BMW, MINI y Motorrad.'
+      : 'Total suma la utilidad neta de todas las unidades de la marca.';
   }
   const rows = (vendidosRows || []).filter((r) => r.utilidadNeta != null);
   if (rows.length < VENDIDOS_MIN_CARLINE_CHART) {
     if (box) box.classList.add('hidden');
-    if (titulo) titulo.textContent = rows.length ? 'Pocas unidades para comparar carlines' : 'Sin unidades con utilidad neta';
+    if (titulo) titulo.textContent = rows.length ? 'Pocas unidades para comparar marcas' : 'Sin unidades con utilidad neta';
     if (sub) sub.textContent = `El gráfico aparece desde ${VENDIDOS_MIN_CARLINE_CHART} unidades`;
     if (nota) {
       nota.classList.remove('hidden');
       nota.textContent = rows.length
-        ? `Con ${rows.length} unidad(es) la comparación por carline no es representativa. El gráfico aparece desde ${VENDIDOS_MIN_CARLINE_CHART} unidades.`
+        ? `Con ${rows.length} unidad(es) la comparación por marca no es representativa. El gráfico aparece desde ${VENDIDOS_MIN_CARLINE_CHART} unidades.`
         : 'Sin unidades con utilidad neta en el periodo.';
     }
     return;
   }
   if (box) box.classList.remove('hidden');
   if (!canvas || typeof Chart === 'undefined') return;
-  const items = vendidosCarlineItems(rows);
+  const items = vendidosMarcaItems(rows);
   const avg = rows.reduce((s, r) => s + Number(r.utilidadNeta || 0), 0) / rows.length;
   const problema = items
     .filter((x) => !x.otros && x.n >= VENDIDOS_MIN_CARLINE_CHART && x.prom < avg)
@@ -3025,28 +3102,28 @@ function renderVendidosCarlineChart() {
   const named = items.filter((x) => !x.otros);
   if (titulo) {
     if (problema) {
-      titulo.textContent = `${vendidosUnitLabel(problema.carline)} es el carline con menor utilidad por unidad`;
+      titulo.textContent = `${problema.marca} es la marca con menor utilidad por unidad`;
     } else if (named[0] && named[1]) {
       const pct = Math.round(((named[0].n + named[1].n) / rows.length) * 100);
-      titulo.textContent = `${vendidosUnitLabel(named[0].carline)} y ${vendidosUnitLabel(named[1].carline)} concentran ${pct}% de las unidades`;
+      titulo.textContent = `${named[0].marca} y ${named[1].marca} concentran ${pct}% de las unidades`;
     } else if (named[0]) {
       const pct = Math.round((named[0].n / rows.length) * 100);
-      titulo.textContent = `${vendidosUnitLabel(named[0].carline)} concentra ${pct}% de las unidades`;
+      titulo.textContent = `${named[0].marca} concentra ${pct}% de las unidades`;
     } else {
-      titulo.textContent = 'Las unidades quedan en carlines de poco volumen';
+      titulo.textContent = 'Sin marcas para comparar';
     }
   }
   if (sub) {
     sub.textContent = porUnidad
-      ? 'Por carline · ordenado por unidades · la línea es el promedio del mes'
-      : 'Total de utilidad neta · ordenado por unidades';
+      ? 'Por marca · BMW, MINI y Motorrad · la línea es el promedio del mes'
+      : 'Total de utilidad neta por marca';
   }
   if (nota) {
     if (problema) {
       const bajo = problema.bajo > 0
         ? `, ${problema.bajo} venta${problema.bajo === 1 ? '' : 's'} bajo costo`
         : '';
-      nota.textContent = `${vendidosUnitLabel(problema.carline)}: ${problema.n} uds, ${vendidosMoneyShort(problema.prom)} por unidad${bajo}`;
+      nota.textContent = `${problema.marca}: ${problema.n} uds, ${vendidosMoneyShort(problema.prom)} por unidad${bajo}`;
       nota.classList.remove('hidden');
     } else {
       nota.textContent = '';
@@ -3067,7 +3144,7 @@ function renderVendidosCarlineChart() {
     data: {
       labels: items.map((x) => (x.otros
         ? x.etiqueta
-        : `${vendidosUnitLabel(x.carline)} · ${x.n} ud${x.n === 1 ? '' : 's'}`)),
+        : `${x.marca} · ${x.n} ud${x.n === 1 ? '' : 's'}`)),
       datasets: [{
         data: items.map((x) => Math.round(valor(x))),
         backgroundColor: items.map((x) => vendidosCarlineColor(x, avg, porUnidad)),
@@ -3083,8 +3160,7 @@ function renderVendidosCarlineChart() {
       onClick: (_evt, elements) => {
         const item = items[elements?.[0]?.index];
         if (!item || item.otros) return;
-        vendidosCarlineFilter = item.carline;
-        renderVendidosCarlineFilterTabs();
+        vendidosMarcaFilter = item.marca;
         renderVendidosTable();
         document.getElementById('secVendidosAnalisis')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       },
@@ -3151,7 +3227,7 @@ async function loadVendidosAnalisis({ quiet = false } = {}) {
     renderVendidosCarlineFilterTabs([]);
     const body = document.getElementById('vendidosSlowBody');
     if (body) {
-      body.innerHTML = `<tr><td colspan="13" class="empty-row">${escapeHtml(err.message || 'No se pudieron cargar las ventas.')}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="15" class="empty-row">${escapeHtml(err.message || 'No se pudieron cargar las ventas.')}</td></tr>`;
     }
     renderIemcF2(null, err.message);
   } finally {
@@ -4773,6 +4849,15 @@ function renderSeminuevosOverview(data) {
   setText('semiDays', fmt.number(s.diasPromedio || 0));
   setText('semiAgeing', fmt.number(s.envejecidas || 0));
   setText('semiAgeingSub', `${fmt.number(s.criticas || 0)} críticas · 90+ días`);
+  const incadea = data?.fuente === 'incadea';
+  const stockSub = document.getElementById('semiStockSub');
+  if (stockSub) stockSub.textContent = incadea ? 'Estatus usado · grupo VU' : 'Situación SFIS · físico seminuevo';
+  const rotSub = document.getElementById('semiRotacionSub');
+  if (rotSub) {
+    rotSub.textContent = incadea
+      ? 'Facturas Incadea grupo VU · últimos 12 meses · recepción de compra a factura · importe sin IVA'
+      : 'Facturas históricas seminuevos (ADE_VTAFI tipo U) · últimos 12 meses · días de adquisición a factura';
+  }
 
   const marcaBody = document.getElementById('tblSemiMarca');
   if (marcaBody) {
@@ -4784,7 +4869,7 @@ function renderSeminuevosOverview(data) {
           <td class="cell-num">${fmt.number(r.unidades)}</td>
           <td class="cell-num">${r.diasPromedio != null ? fmt.number(r.diasPromedio) : '—'}</td>
           <td class="cell-money">${moneyInt(r.valorAdquisicion || 0)}</td>
-          <td class="cell-money">${moneyInt(r.valorVenta || 0)}</td>
+          <td class="cell-money">${moneyOrDash(fmt, r.valorVenta)}</td>
         </tr>`).join('')
       : '<tr class="empty-row"><td colspan="5">Sin unidades en stock.</td></tr>';
   }
@@ -4825,10 +4910,23 @@ function rowsForSemiKpi(kpi) {
 }
 
 function semiKpiMeta(kpi) {
+  const incadea = seminuevosData?.fuente === 'incadea';
   const map = {
-    total: { title: 'Unidades en stock', hint: 'Inventario vivo SFIS', icon: 'directions_car' },
-    toma: { title: 'Precio de toma', hint: 'VEH_TOMAIMPADQUI · costo de toma / adquisición', icon: 'payments' },
-    days: { title: 'Días en stock', hint: 'Desde VEH_SFECADQUI', icon: 'schedule' },
+    total: {
+      title: 'Unidades en stock',
+      hint: incadea ? 'Estatus usado · grupo VU' : 'Inventario vivo SFIS',
+      icon: 'directions_car',
+    },
+    toma: {
+      title: 'Precio de toma',
+      hint: incadea ? 'Última factura de compra, sin IVA' : 'VEH_TOMAIMPADQUI · costo de toma / adquisición',
+      icon: 'payments',
+    },
+    days: {
+      title: 'Días en stock',
+      hint: incadea ? 'Desde la recepción de compra' : 'Desde VEH_SFECADQUI',
+      icon: 'schedule',
+    },
     ageing: { title: 'Antigüedad 60+', hint: 'Unidades con 60 o más días en inventario', icon: 'warning' },
   };
   return map[kpi] || { title: 'Seminuevos', hint: '', icon: 'directions_car' };
@@ -5113,8 +5211,8 @@ function ensureSemiUnitDetailPanel() {
             ${fichaRow('Venta IVA incluido', escapeHtml(moneyFull(u.precioVentaIva)))}
             ${fichaRow('Compra según guía', escapeHtml(moneyFull(u.precioCompraGuia)))}
             ${fichaRow('Venta según guía', escapeHtml(moneyFull(u.precioVentaGuia)))}
-            ${fichaRow('Margen est. (venta – toma)', escapeHtml(moneyFull(u.margenEstimado, { allowZero: true })))}
-            ${fichaRow('Margen vs guía', escapeHtml(moneyFull(u.margenVsGuia, { allowZero: true })))}
+            ${fichaRow('Margen est. (venta – toma)', escapeHtml(Number(u.precioVentaIva) > 0 ? moneyFull(u.margenEstimado, { allowZero: true }) : '—'))}
+            ${fichaRow('Margen vs guía', escapeHtml(Number(u.precioCompraGuia) > 0 ? moneyFull(u.margenVsGuia, { allowZero: true }) : '—'))}
           </section>
 
           <section class="semi-ficha__card semi-ficha__card--wide">
@@ -6294,6 +6392,7 @@ document.getElementById('vendidosCarlineFilterTabs')?.addEventListener('click', 
 document.getElementById('vendidosSearchMeta')?.addEventListener('click', (e) => {
   if (!e.target.closest('#vendidosClearFilter')) return;
   vendidosCarlineFilter = 'all';
+  vendidosMarcaFilter = 'all';
   renderVendidosCarlineFilterTabs(vendidosCarlineFilters);
   renderVendidosTable();
 });
@@ -6314,6 +6413,7 @@ document.getElementById('vendidosPeriod')?.addEventListener('change', () => {
     Dashboard.updateCompactFilterLabels?.();
   }
   vendidosCarlineFilter = 'all';
+  vendidosMarcaFilter = 'all';
   loadVendidosAnalisis({ quiet: false });
 });
 document.getElementById('autosVendidosInsightsCompactGoto')?.addEventListener('click', () => {

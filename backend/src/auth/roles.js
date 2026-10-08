@@ -13,7 +13,7 @@ const ROLE_DEFAULTS = {
   administracion: {
     id: 'administracion',
     label: 'Administración',
-    pages: ['admin', 'overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento'],
+    pages: ['admin', 'overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento', 'bonos'],
     homePath: '/',
     canManageUsers: true,
     apiPrefixes: ['*'],
@@ -21,16 +21,16 @@ const ROLE_DEFAULTS = {
   direccion: {
     id: 'direccion',
     label: 'Dirección',
-    pages: ['overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento'],
+    pages: ['overview', 'sales', 'forecast', 'inventory', 'contabilidad', 'post-sales', 'seguimiento', 'bonos'],
     homePath: '/',
     apiPrefixes: ['*'],
   },
   gerencia_comercial: {
     id: 'gerencia_comercial',
     label: 'Gerencia Comercial',
-    pages: ['overview', 'sales', 'forecast', 'inventory', 'seguimiento'],
+    pages: ['overview', 'sales', 'forecast', 'inventory', 'seguimiento', 'bonos'],
     homePath: '/',
-    apiPrefixes: ['/overview', '/ventas', '/forecast', '/inventory', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
+    apiPrefixes: ['/overview', '/ventas', '/forecast', '/inventory', '/crm', '/seguimiento-360', '/objetivos-resultados', '/bonos', '/ai', '/health'],
   },
   vendedor: {
     id: 'vendedor',
@@ -49,9 +49,9 @@ const ROLE_DEFAULTS = {
   marketing: {
     id: 'marketing',
     label: 'Mercadotecnia (MTK)',
-    pages: ['overview', 'sales', 'seguimiento'],
+    pages: ['overview', 'sales', 'seguimiento', 'bonos'],
     homePath: '/',
-    apiPrefixes: ['/overview', '/ventas', '/crm', '/seguimiento-360', '/objetivos-resultados', '/ai', '/health'],
+    apiPrefixes: ['/overview', '/ventas', '/crm', '/seguimiento-360', '/objetivos-resultados', '/bonos', '/ai', '/health'],
   },
   gestion_inventario: {
     id: 'gestion_inventario',

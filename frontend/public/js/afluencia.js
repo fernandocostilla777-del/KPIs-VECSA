@@ -145,7 +145,7 @@
         ...cmp,
         trimestres: fromCentro.trimestres,
         centroKey: key,
-        centroLabel: fromCentro.label || CENTRO_LABEL[key] || key,
+        centroLabel: fromCentro.label || marcaLabelDe(key),
         centroReady: true,
       };
     }
@@ -153,7 +153,7 @@
     return {
       ...cmp,
       centroKey: key,
-      centroLabel: CENTRO_LABEL[key] || key,
+      centroLabel: marcaLabelDe(key),
       centroReady: key === 'todos',
       needsCentroReload: key !== 'todos',
     };
@@ -176,12 +176,25 @@
     });
   }
 
+  function marcaOpciones() {
+    const centros = state.data?.comparativoYtd?.centros;
+    if (Array.isArray(centros) && centros.length) return centros;
+    return [{ key: 'todos', label: 'Todos' }];
+  }
+
+  function marcaLabelDe(key) {
+    return marcaOpciones().find((c) => c.key === key)?.label || CENTRO_LABEL[key] || key;
+  }
+
   function syncCentroChips() {
-    els.centroChips?.querySelectorAll('[data-af-centro]').forEach((btn) => {
-      const on = btn.dataset.afCentro === state.centro;
-      btn.classList.toggle('active', on);
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
+    if (!els.centroChips) return;
+    const opciones = marcaOpciones();
+    if (!opciones.some((c) => c.key === state.centro)) state.centro = 'todos';
+    els.centroChips.setAttribute('aria-label', 'Marca');
+    els.centroChips.innerHTML = opciones.map((c) => {
+      const on = c.key === state.centro;
+      return `<button type="button" class="chip${on ? ' active' : ''}" data-af-centro="${escapeHtml(c.key)}" aria-pressed="${on ? 'true' : 'false'}">${escapeHtml(c.label)}</button>`;
+    }).join('');
   }
 
   function syncQuarterChips() {
@@ -218,14 +231,14 @@
   }
 
   async function setCentro(centro) {
-    if (!CENTRO_LABEL[centro]) return;
+    if (!marcaOpciones().some((c) => c.key === centro)) return;
     state.centro = centro;
     syncCentroChips();
 
     // Si el payload no trae desglose por centro, forzar recarga del API.
     if (centro !== 'todos' && !hasPorCentro() && state.fechaInicio && state.fechaFin) {
       if (els.detailResumen) {
-        els.detailResumen.textContent = `Cargando ${CENTRO_LABEL[centro]}…`;
+        els.detailResumen.textContent = `Cargando ${marcaLabelDe(centro)}…`;
       }
       await load(state.fechaInicio, state.fechaFin, { force: true, keepFilters: true });
       state.centro = centro;
@@ -535,7 +548,7 @@
       <div class="ops-orders-drawer__toolbar">
         <label class="ops-orders-drawer__search" for="afKpiSearch">
           <span class="material-symbols-outlined" aria-hidden="true">search</span>
-          <input id="afKpiSearch" type="search" placeholder="Buscar cliente, asesor, sucursal…" autocomplete="off"/>
+          <input id="afKpiSearch" type="search" placeholder="Buscar cliente, asesor, marca…" autocomplete="off"/>
         </label>
         <button type="button" class="ops-orders-drawer__filter-chip" data-af-kpi-filter-chip hidden title="Quitar filtro"></button>
         <span class="ops-orders-drawer__meta" data-af-kpi-meta></span>
@@ -569,7 +582,7 @@
     let lastCard = null;
 
     const FILTER_DIM_LABEL = {
-      sucursal: 'Sucursal',
+      sucursal: 'Marca',
       asesor: 'Asesor',
       medio: 'Medio',
       submedio: 'Submedio',
@@ -682,7 +695,7 @@
           <p class="ops-orders-drawer__hint">${escapeHtml(currentMeta.hint || '')}</p>
         </div>
         ${showCompra ? block('Compra', 'compra', countByField(rows, (r) => (r.conCompra ? 'Compró auto' : 'Sin compra'))) : ''}
-        ${block('Por sucursal', 'sucursal', countByField(rows, (r) => r.sucursal || r.centroTrabajo || 'Sin sucursal'))}
+        ${block('Por marca', 'sucursal', countByField(rows, (r) => r.sucursal || r.centroTrabajo || 'Sin marca'))}
         ${block(isPruebas ? 'Por ejecutivo' : 'Por asesor', 'asesor', countByField(rows, (r) => r.asesor || r.ejecutivo || 'Sin asesor'))}
         ${isPruebas
           ? block('Auto / interés', 'interes', countByField(rows, (r) => r.autoInteres || r.tipoAuto || 'Sin interés'))
@@ -817,7 +830,7 @@
       panel.setAttribute('aria-label', currentMeta.title);
       if (searchEl) {
         searchEl.value = '';
-        searchEl.placeholder = 'Buscar cliente, asesor, sucursal…';
+        searchEl.placeholder = 'Buscar cliente, asesor, marca…';
       }
 
       sourceRows = rowsForAfKpi(kpiKey).slice();

@@ -1,4 +1,5 @@
-const { query } = require('../db');
+const { query, getPool, sql } = require('../db');
+const { tabla } = require('../incadea/queries');
 
 /** Grupo de materiales Hojalatería y Pintura en PAR_PARTES */
 const HYP_GRUPO = '32';
@@ -601,7 +602,387 @@ function buildRefaccionesInsights({ refaccionesRows, traspasos, overview, rotaci
   return insights;
 }
 
-async function getInventoryPostventa(opts = {}) {
+function empresaIncadea() {
+  try {
+    const { leerPrivado } = require('../incadea/privateStore');
+    const mapeo = leerPrivado('incadea-mapeo', { opcional: true, porDefecto: null });
+    const empresa = mapeo?.data?.empresa;
+    if (empresa) return String(empresa).trim();
+  } catch {
+    /* usa el nombre confirmado en esta base */
+  }
+  return 'Vecsa Hidalgo';
+}
+
+const HYP_GRUPOS = new Set(['RE-HJ', 'RE-PP']);
+
+function esHypGrupo(grupo) {
+  return HYP_GRUPOS.has(String(grupo || '').trim().toUpperCase());
+}
+
+function diasDesdeFecha(iso, hoy) {
+  const texto = String(iso || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return 9999;
+  const [y, m, d] = texto.split('-').map(Number);
+  const desde = new Date(y, m - 1, d);
+  const hasta = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  return Math.max(0, Math.round((hasta - desde) / 86400000));
+}
+
+async function loadIncadeaPostventa({ fechaInicio, fechaFin }) {
+  const empresa = empresaIncadea();
+  const ile = tabla(empresa, 'Item Ledger Entry');
+  const item = tabla(empresa, 'Item');
+  const grupo = tabla(empresa, 'Inventory Posting Group');
+  const sle = tabla(empresa, 'Service Ledger Entry');
+  const ve = tabla(empresa, 'Value Entry');
+  const pool = await getPool();
+  const inicio = new Date(`${fechaInicio}T12:00:00`);
+  const fin = new Date(`${fechaFin}T12:00:00`);
+
+  const [stockRes, servicioRes, ventasRes, ultimaRes, traspasoRes] = await Promise.all([
+    pool.request().query(`
+      SELECT
+        LTRIM(RTRIM(e.[Item No_])) AS parte,
+        LTRIM(RTRIM(ISNULL(it.[Description], ''))) AS descripcion,
+        LTRIM(RTRIM(ISNULL(e.[Location Code], ''))) AS almacen,
+        LTRIM(RTRIM(ISNULL(it.[Inventory Posting Group], ''))) AS grupo,
+        LTRIM(RTRIM(ISNULL(g.[Description], ''))) AS grupoLabel,
+        SUM(e.[Remaining Quantity]) AS existencia,
+        SUM(e.[Remaining Quantity] * ISNULL(it.[Unit Cost], 0)) AS costo
+      FROM ${ile} e
+      INNER JOIN ${item} it ON it.[No_] = e.[Item No_]
+      LEFT JOIN ${grupo} g ON g.[Code] = it.[Inventory Posting Group]
+      WHERE e.[Open] = 1
+        AND e.[Remaining Quantity] > 0
+        AND e.[Item Type] = 1
+        AND it.[Inventory Posting Group] LIKE 'RE%'
+      GROUP BY
+        LTRIM(RTRIM(e.[Item No_])),
+        LTRIM(RTRIM(ISNULL(it.[Description], ''))),
+        LTRIM(RTRIM(ISNULL(e.[Location Code], ''))),
+        LTRIM(RTRIM(ISNULL(it.[Inventory Posting Group], ''))),
+        LTRIM(RTRIM(ISNULL(g.[Description], '')))
+    `),
+    pool.request().query(`
+      SELECT
+        LTRIM(RTRIM(s.[No_])) AS parte,
+        LTRIM(RTRIM(ISNULL(s.[Description], ''))) AS descripcion,
+        LTRIM(RTRIM(ISNULL(s.[Location Code], ''))) AS almacen,
+        LTRIM(RTRIM(ISNULL(it.[Inventory Posting Group], ''))) AS grupo,
+        LTRIM(RTRIM(ISNULL(g.[Description], ''))) AS grupoLabel,
+        SUM(s.[Open Quantity]) AS proceso,
+        SUM(CASE
+          WHEN ISNULL(s.[Unit Cost], 0) > 0 THEN s.[Open Quantity] * s.[Unit Cost]
+          ELSE ISNULL(s.[Total Cost], 0)
+        END) AS costoProceso
+      FROM ${sle} s
+      LEFT JOIN ${item} it ON it.[No_] = s.[No_]
+      LEFT JOIN ${grupo} g ON g.[Code] = it.[Inventory Posting Group]
+      WHERE s.[Open] = 1
+        AND s.[Type] = 1
+        AND s.[Open Quantity] > 0
+      GROUP BY
+        LTRIM(RTRIM(s.[No_])),
+        LTRIM(RTRIM(ISNULL(s.[Description], ''))),
+        LTRIM(RTRIM(ISNULL(s.[Location Code], ''))),
+        LTRIM(RTRIM(ISNULL(it.[Inventory Posting Group], ''))),
+        LTRIM(RTRIM(ISNULL(g.[Description], '')))
+    `),
+    pool.request()
+      .input('fechaInicio', sql.Date, inicio)
+      .input('fechaFin', sql.Date, fin)
+      .query(`
+        SELECT
+          LTRIM(RTRIM(v.[Item No_])) AS parte,
+          MAX(LTRIM(RTRIM(ISNULL(it.[Description], '')))) AS descripcion,
+          SUM(-v.[Invoiced Quantity]) AS cantidad,
+          SUM(-v.[Amount]) AS venta,
+          SUM(-v.[Cost Posted to G_L]) AS costo
+        FROM ${ve} v
+        LEFT JOIN ${item} it ON it.[No_] = v.[Item No_]
+        WHERE v.[Posting Date] >= @fechaInicio
+          AND v.[Posting Date] < DATEADD(day, 1, @fechaFin)
+          AND v.[Item Type] = 1
+          AND v.[Item Ledger Entry Type] = 1
+        GROUP BY LTRIM(RTRIM(v.[Item No_]))
+        HAVING SUM(-v.[Invoiced Quantity]) <> 0
+      `),
+    pool.request().query(`
+      SELECT
+        LTRIM(RTRIM(v.[Item No_])) AS parte,
+        CONVERT(varchar(10), MAX(v.[Posting Date]), 23) AS ultima
+      FROM ${ve} v
+      WHERE v.[Item Ledger Entry Type] = 1
+        AND v.[Item Type] = 1
+        AND v.[Invoiced Quantity] < 0
+      GROUP BY LTRIM(RTRIM(v.[Item No_]))
+    `),
+    pool.request()
+      .input('fechaInicio', sql.Date, inicio)
+      .input('fechaFin', sql.Date, fin)
+      .query(`
+        SELECT
+          CONVERT(varchar(10), v.[Posting Date], 23) AS fecha,
+          v.[Document No_] AS doc,
+          LTRIM(RTRIM(v.[Item No_])) AS parte,
+          LTRIM(RTRIM(ISNULL(it.[Description], ''))) AS descripcion,
+          LTRIM(RTRIM(ISNULL(v.[Location Code], ''))) AS origen,
+          LTRIM(RTRIM(ISNULL(dest.loc, v.[Location Code]))) AS destino,
+          ABS(v.[Invoiced Quantity]) AS piezas,
+          ABS(v.[Cost Posted to G_L]) AS costo
+        FROM ${ve} v
+        LEFT JOIN ${item} it ON it.[No_] = v.[Item No_]
+        OUTER APPLY (
+          SELECT TOP 1 LTRIM(RTRIM(p.[Location Code])) AS loc
+          FROM ${ve} p
+          WHERE p.[Document No_] = v.[Document No_]
+            AND p.[Item No_] = v.[Item No_]
+            AND p.[Item Ledger Entry Type] = 4
+            AND p.[Invoiced Quantity] > 0
+            AND p.[Posting Date] = v.[Posting Date]
+        ) dest
+        WHERE v.[Posting Date] >= @fechaInicio
+          AND v.[Posting Date] < DATEADD(day, 1, @fechaFin)
+          AND v.[Item Type] = 1
+          AND v.[Item Ledger Entry Type] = 4
+          AND v.[Invoiced Quantity] < 0
+      `),
+  ]);
+
+  return {
+    stock: stockRes.recordset || [],
+    servicio: servicioRes.recordset || [],
+    ventas: ventasRes.recordset || [],
+    ultimas: ultimaRes.recordset || [],
+    traspasos: traspasoRes.recordset || [],
+  };
+}
+
+function mapStockIncadea(row) {
+  const grupoCode = String(row.grupo || '').trim();
+  const isHyp = esHypGrupo(grupoCode);
+  return {
+    parte: String(row.parte || '').trim(),
+    descripcion: String(row.descripcion || '').trim() || 'Sin descripción',
+    almacen: String(row.almacen || '').trim() || '—',
+    grupo: grupoCode,
+    grupoLabel: String(row.grupoLabel || '').trim() || (grupoCode ? grupoCode : 'Sin grupo'),
+    existencia: Number(row.existencia) || 0,
+    apartada: 0,
+    proceso: Number(row.proceso) || 0,
+    costoPromedio: 0,
+    costo: Number(row.costo) || 0,
+    costoProceso: Number(row.costoProceso) || 0,
+    isHyp,
+    area: isHyp ? 'hyp' : 'refacciones',
+  };
+}
+
+function armarTraspasosIncadea(rows, fechaInicio, fechaFin) {
+  const detalle = (rows || []).map((row) => {
+    const origen = String(row.origen || '').trim() || '—';
+    const destino = String(row.destino || '').trim() || origen;
+    const interno = origen === destino;
+    return {
+      fecha: row.fecha || null,
+      tipoSalida: 'DTR',
+      numero: row.doc,
+      parte: String(row.parte || '').trim(),
+      descripcion: String(row.descripcion || '').trim() || 'Sin descripción',
+      origen,
+      destino: interno ? 'Interno' : destino,
+      piezas: round2(row.piezas),
+      costo: round2(row.costo),
+      observa: String(row.doc || '').trim(),
+    };
+  }).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || String(b.numero || '').localeCompare(String(a.numero || '')));
+
+  const rutasMap = new Map();
+  const partesMap = new Map();
+  const docs = new Set();
+  for (const row of detalle) {
+    docs.add(String(row.numero || ''));
+    const rutaKey = `${row.origen}|${row.destino}`;
+    const ruta = rutasMap.get(rutaKey) || {
+      origen: row.origen,
+      destino: row.destino,
+      ruta: row.origen === '—' ? row.destino : (row.destino === 'Interno' ? `Traspaso interno ${row.origen}` : `${row.origen} → ${row.destino}`),
+      lineas: 0,
+      piezas: 0,
+      costo: 0,
+    };
+    ruta.lineas += 1;
+    ruta.piezas += row.piezas;
+    ruta.costo += row.costo;
+    rutasMap.set(rutaKey, ruta);
+    const parte = partesMap.get(row.parte) || {
+      parte: row.parte,
+      descripcion: row.descripcion,
+      movimientos: 0,
+      piezas: 0,
+      costo: 0,
+      almacenes: new Set(),
+    };
+    parte.movimientos += 1;
+    parte.piezas += row.piezas;
+    parte.costo += row.costo;
+    parte.almacenes.add(row.origen);
+    partesMap.set(row.parte, parte);
+  }
+
+  return {
+    fuente: 'Incadea · traspasos de refacción (movimiento tipo transferencia)',
+    periodo: { fechaInicio, fechaFin },
+    summary: {
+      documentos: docs.size,
+      partes: partesMap.size,
+      almacenesOrigen: new Set(detalle.map((r) => r.origen)).size,
+      piezas: round2(detalle.reduce((s, r) => s + r.piezas, 0)),
+      costo: round2(detalle.reduce((s, r) => s + r.costo, 0)),
+    },
+    rutas: [...rutasMap.values()]
+      .map((r) => ({ ...r, piezas: round2(r.piezas), costo: round2(r.costo) }))
+      .sort((a, b) => b.costo - a.costo),
+    topPartes: [...partesMap.values()]
+      .map((r) => ({
+        parte: r.parte,
+        descripcion: r.descripcion,
+        movimientos: r.movimientos,
+        piezas: round2(r.piezas),
+        costo: round2(r.costo),
+        almacenes: r.almacenes.size,
+      }))
+      .sort((a, b) => b.piezas - a.piezas)
+      .slice(0, 25),
+    detalle: detalle.slice(0, 80),
+  };
+}
+
+async function getIncadeaInventoryPostventa({ fechaInicio, fechaFin }) {
+  const crudo = await loadIncadeaPostventa({ fechaInicio, fechaFin });
+  const stock = (crudo.stock || []).map(mapStockIncadea);
+  const servicio = (crudo.servicio || []).map((row) => ({
+    ...mapStockIncadea(row),
+    existencia: 0,
+    costo: 0,
+    proceso: Number(row.proceso) || 0,
+    costoProceso: Number(row.costoProceso) || 0,
+    area: 'servicio',
+  }));
+  const hyp = stock.filter((r) => r.isHyp && r.existencia > 0);
+  const refacciones = stock.filter((r) => !r.isHyp && r.existencia > 0);
+
+  const areas = {
+    servicio: {
+      id: 'servicio',
+      label: 'Servicio',
+      description: 'Refacciones abiertas en orden de servicio',
+      ...buildAreaPayload(servicio),
+    },
+    refacciones: {
+      id: 'refacciones',
+      label: 'Refacciones',
+      description: 'Existencia de refacciones (grupos RE, sin hojalatería ni pintura)',
+      ...buildAreaPayload(refacciones),
+    },
+    hyp: {
+      id: 'hyp',
+      label: 'HYP',
+      description: 'Hojalatería y pintura (grupos RE-HJ y RE-PP)',
+      ...buildAreaPayload(hyp),
+    },
+  };
+  const overview = {
+    servicio: areas.servicio.summary,
+    refacciones: areas.refacciones.summary,
+    hyp: areas.hyp.summary,
+    totalCosto: round2(
+      areas.servicio.summary.costoProceso
+      + areas.refacciones.summary.costo
+      + areas.hyp.summary.costo,
+    ),
+  };
+
+  const piezas = (crudo.ventas || []).map((row) => {
+    const venta = round2(row.venta);
+    const costo = round2(row.costo);
+    const utilidad = round2(venta - costo);
+    return {
+      parte: String(row.parte || '').trim(),
+      descripcion: String(row.descripcion || '').trim() || 'Sin descripción',
+      cantidad: round2(row.cantidad),
+      venta,
+      costo,
+      utilidad,
+      margenPct: venta ? round2((utilidad / venta) * 100) : 0,
+    };
+  }).filter((row) => row.parte && row.cantidad > 0);
+
+  const hoy = new Date();
+  const ultimaPorParte = new Map((crudo.ultimas || []).map((row) => [String(row.parte || '').trim(), row.ultima]));
+  const porParteStock = new Map();
+  for (const row of refacciones) {
+    const cur = porParteStock.get(row.parte) || {
+      parte: row.parte,
+      descripcion: row.descripcion,
+      almacen: row.almacen,
+      existencia: 0,
+      costo: 0,
+    };
+    cur.existencia += row.existencia;
+    cur.costo += row.costo;
+    porParteStock.set(row.parte, cur);
+  }
+  const stockTrabado = [...porParteStock.values()].map((row) => {
+    const ultima = ultimaPorParte.get(row.parte) || null;
+    return {
+      ...row,
+      existencia: round2(row.existencia),
+      costo: round2(row.costo),
+      diasSinVenta: diasDesdeFecha(ultima, hoy),
+      ultimaVenta: ultima,
+    };
+  }).filter((row) => row.diasSinVenta >= 90)
+    .sort((a, b) => b.costo - a.costo);
+
+  const rotacionUtilidad = buildRotacionUtilidad({
+    fuente: 'Incadea · ventas de refacción del periodo',
+    summary: {
+      ventaPeriodo: round2(piezas.reduce((s, r) => s + r.venta, 0)),
+      utilidadPeriodo: round2(piezas.reduce((s, r) => s + r.utilidad, 0)),
+      cantidadVendida: round2(piezas.reduce((s, r) => s + r.cantidad, 0)),
+      trabados90: stockTrabado.length,
+      costoTrabado90: round2(stockTrabado.reduce((s, r) => s + r.costo, 0)),
+    },
+    topVendidos: piezas,
+    topUtilidad: piezas,
+    stockTrabado: stockTrabado.slice(0, 40),
+  });
+  rotacionUtilidad.topVendidos = piezas.slice().sort((a, b) => b.cantidad - a.cantidad).slice(0, 12);
+  rotacionUtilidad.topUtilidad = piezas.slice().sort((a, b) => b.utilidad - a.utilidad).slice(0, 12);
+  rotacionUtilidad.nota = 'Matriz por mediana de piezas vendidas y margen % del periodo. Obsoleto = 90 días o más sin factura de refacción. Importes sin IVA.';
+
+  const traspasos = armarTraspasosIncadea(crudo.traspasos, fechaInicio, fechaFin);
+  const insights = buildRefaccionesInsights({
+    refaccionesRows: refacciones,
+    traspasos,
+    overview,
+    rotacionUtilidad,
+  });
+
+  return {
+    fuente: 'Incadea · existencia de refacciones, órdenes de servicio abiertas y ventas del periodo',
+    periodo: { fechaInicio, fechaFin },
+    areas,
+    overview,
+    rotacionUtilidad,
+    traspasos,
+    insights,
+  };
+}
+
+async function getInventoryPostventaDms(opts = {}) {
   const def = defaultPeriodo();
   const fechaInicio = parseDateInput(opts.fechaInicio, def.fechaInicio);
   const fechaFin = parseDateInput(opts.fechaFin, def.fechaFin);
@@ -669,6 +1050,21 @@ async function getInventoryPostventa(opts = {}) {
     traspasos,
     insights,
   };
+}
+
+async function getInventoryPostventa(opts = {}) {
+  try {
+    return await getInventoryPostventaDms(opts);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+    console.warn('[postventa] El esquema anterior no está en esta base. Se usa Incadea:', msg);
+    const def = defaultPeriodo();
+    return getIncadeaInventoryPostventa({
+      fechaInicio: parseDateInput(opts.fechaInicio, def.fechaInicio),
+      fechaFin: parseDateInput(opts.fechaFin, def.fechaFin),
+    });
+  }
 }
 
 module.exports = {

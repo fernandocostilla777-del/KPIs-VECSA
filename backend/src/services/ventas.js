@@ -4,6 +4,7 @@ const { getNotificacionesEntrega, computeCoberturaSofia, annotateFlotillaGmfCont
 const { getComparativoYtd, buildYtdRanges } = require('./ytd-comparativo');
 const { getMejorUtilidadPorCarline } = require('./utilidadCarlineService');
 const { getInventory } = require('./inventoryService');
+const { getIncadeaVentasPeriodo, aplicarConteosIncadea } = require('./incadeaVentas');
 
 const TIPO_VENTA_CASE = `
   CASE VTE_FORMAPAGO
@@ -794,13 +795,64 @@ function summarizeVentas(rows, inicio, fin, sofiaEntregas = {}) {
   };
 }
 
+function resumirTomas(registros, inicio, fin) {
+  registros.sort((a, b) => {
+    if (Boolean(b.vendido) !== Boolean(a.vendido)) {
+      return a.vendido ? -1 : 1;
+    }
+    const pa = parseFechaDoc(a.fechaToma) || parseFechaDoc(a.fechaFactura);
+    const pb = parseFechaDoc(b.fechaToma) || parseFechaDoc(b.fechaFactura);
+    const da = pa ? Date.UTC(pa.year, pa.month - 1, pa.day) : 0;
+    const db = pb ? Date.UTC(pb.year, pb.month - 1, pb.day) : 0;
+    if (db !== da) return db - da;
+    return String(b.idPedido || '').localeCompare(String(a.idPedido || ''));
+  });
+
+  const montoTotal = registros.reduce((s, r) => s + (Number(r.importeVehiculo) || 0), 0);
+  const montoAdquisicion = registros.reduce((s, r) => s + (Number(r.importeAdquisicion) || 0), 0);
+  const montoVentasUsado = registros.reduce((s, r) => s + (Number(r.montoVentaUsado) || 0), 0);
+  const totalVendidos = registros.filter((r) => r.vendido).length;
+  const totalVendidosMismoMes = registros.filter((r) => r.vendidoMismoMes).length;
+  const totalEnInventario = registros.length - totalVendidos;
+  const porModeloToma = {};
+  for (const r of registros) {
+    const key = String(r.modeloToma || 'Sin modelo').trim() || 'Sin modelo';
+    porModeloToma[key] = (porModeloToma[key] || 0) + 1;
+  }
+
+  const porMes = buildTomasPorMes(registros, inicio, fin);
+
+  return {
+    total: registros.length,
+    totalVendidos,
+    totalEnInventario,
+    totalVendidosMismoMes,
+    pctVendidos: registros.length > 0
+      ? Math.round((totalVendidos / registros.length) * 1000) / 10
+      : 0,
+    pctVendidosMismoMes: registros.length > 0
+      ? Math.round((totalVendidosMismoMes / registros.length) * 1000) / 10
+      : 0,
+    montoTotal: Math.round(montoTotal * 100) / 100,
+    montoAdquisicion: Math.round(montoAdquisicion * 100) / 100,
+    montoVentasUsado: Math.round(montoVentasUsado * 100) / 100,
+    porModeloToma: Object.entries(porModeloToma)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value),
+    porMes,
+    registros,
+  };
+}
+
 async function getTomasACuenta({ fechaInicio, fechaFin }) {
   const inicio = parseDateInput(fechaInicio);
   const fin = parseDateInput(fechaFin);
   const pool = await getPool();
   // Tomas por PET_FECHOPE. "Vendidas" = el usado ya tiene pedido USN_PEDIDO status I
   // en cualquier fecha >= toma (para ver qué del mes tomado sigue en inventario).
-  const result = await pool.request()
+  let result;
+  try {
+  result = await pool.request()
     .input('fechaInicio', sql.Date, inicio)
     .input('fechaFin', sql.Date, fin)
     .query(`
@@ -890,6 +942,12 @@ async function getTomasACuenta({ fechaInicio, fechaFin }) {
       WHERE LTRIM(RTRIM(ISNULL(t.PET_VINTOMA, ''))) <> ''
         AND CONVERT(DATE, t.PET_FECHOPE, 103) BETWEEN @fechaInicio AND @fechaFin
     `);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (!/Invalid object name|Invalid column name|no es válido/i.test(msg)) throw err;
+    const { getIncadeaTomasRegistros } = require('./incadeaVentas');
+    return resumirTomas(await getIncadeaTomasRegistros({ inicio, fin }), inicio, fin);
+  }
 
   const seen = new Set();
   const registros = [];
@@ -1052,18 +1110,25 @@ async function getVentasSofiaCore({ fechaInicio, fechaFin, incluirPorMes = false
     request.input('fechaInicio', sql.Date, inicio);
     request.input('fechaFin', sql.Date, fin);
 
-    const [result, sofiaEntregas] = await Promise.all([
-      request.query(buildVentasQuery()),
-      getNotificacionesEntrega({ fechaInicio, fechaFin, incluirPorMes, fresh }),
-    ]);
-
-    const data = {
-      registros: await annotateDemosFromSofDemo(
-        markDemoVentasRows(reclassifyFlotgmfMenudeo(enrichVentasRows(result.recordset))),
-      ),
-      sofiaEntregas,
-      entregasSofia: sofiaEntregas.registrosEntrega ?? [],
-    };
+    let data;
+    try {
+      const [result, sofiaEntregas] = await Promise.all([
+        request.query(buildVentasQuery()),
+        getNotificacionesEntrega({ fechaInicio, fechaFin, incluirPorMes, fresh }),
+      ]);
+      data = {
+        registros: await annotateDemosFromSofDemo(
+          markDemoVentasRows(reclassifyFlotgmfMenudeo(enrichVentasRows(result.recordset))),
+        ),
+        sofiaEntregas,
+        entregasSofia: sofiaEntregas.registrosEntrega ?? [],
+      };
+    } catch (err) {
+      const msg = String(err?.message || '');
+      if (!/Invalid column name|Invalid object name/i.test(msg)) throw err;
+      console.warn('[ventas] El esquema anterior no está en esta base. Se usa Incadea:', msg);
+      data = await getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, incluirPorMes });
+    }
     ventasSofiaCoreCache.set(cacheKey, { at: Date.now(), data });
     return data;
   })();
@@ -1138,7 +1203,7 @@ async function getVentas({ fechaInicio, fechaFin, fresh = false } = {}) {
 
   const rows = core.registros;
   const sofiaEntregas = core.sofiaEntregas;
-  const resumen = summarizeVentas(rows, inicio, fin, sofiaEntregas);
+  const resumen = aplicarConteosIncadea(summarizeVentas(rows, inicio, fin, sofiaEntregas), core);
   resumen.unidadesApartadas = Number(inventorySnap?.summary?.availableApartadas ?? 0);
   const apartadasInventario = Array.isArray(inventorySnap?.inventoryTable)
     ? inventorySnap.inventoryTable.filter((u) => u.isApartada || u.situacion === 'SEP')
@@ -1167,12 +1232,12 @@ async function getVentas({ fechaInicio, fechaFin, fresh = false } = {}) {
 
   let resumenAnterior = null;
   if (coreAnterior?.registros) {
-    resumenAnterior = summarizeVentas(
+    resumenAnterior = aplicarConteosIncadea(summarizeVentas(
       coreAnterior.registros,
       inicioAnterior,
       finAnterior,
       coreAnterior.sofiaEntregas || {},
-    );
+    ), coreAnterior);
     // Tomas del mismo periodo del año previo (consulta ligera ya hecha no; opcional omitir).
     resumenAnterior.totalTomasACuenta = 0;
   }
@@ -1186,6 +1251,7 @@ async function getVentas({ fechaInicio, fechaFin, fresh = false } = {}) {
 
   return {
     filtros: { fechaInicio, fechaFin },
+    fuente: core.fuente || 'dms',
     resumen,
     comparativoPeriodo,
     comparativoYtd,

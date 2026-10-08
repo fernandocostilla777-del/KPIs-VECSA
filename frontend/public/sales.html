@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Rendimiento de Ventas | VECSA</title>
+<title>Rendimiento de Ventas | VECSA BMW</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link href="/css/dashboard.css?v=145" rel="stylesheet"/>
@@ -84,10 +84,6 @@ Leads
 <span class="material-symbols-outlined" aria-hidden="true">groups</span>
 Afluencia
 </button>
-<button type="button" class="contabilidad-tab" data-sales-tab="comisiones" aria-controls="panelVentasComisiones" aria-selected="false">
-<span class="material-symbols-outlined" aria-hidden="true">payments</span>
-Comisiones
-</button>
 </nav>
 
 <div id="panelVentasUnidades" class="sales-main-panel" data-sales-panel="ventas">
@@ -97,7 +93,7 @@ Comisiones
 <section id="ventasActResultado" class="ventas-act" aria-labelledby="ventasActResultadoLabel">
 <div class="ventas-act__head">
   <span class="ventas-act__label" id="ventasActResultadoLabel">1 · Resultado del periodo</span>
-  <p class="ventas-act__sub">Volumen facturado, entregas SOFIA, cobertura y carry over</p>
+  <p class="ventas-act__sub">Ventas BMW, Ventas MINI, Ventas Motorrad, cobertura y carry over</p>
 </div>
 
 <section class="kpi-grid kpi-grid--yoy">
@@ -110,7 +106,7 @@ Comisiones
 </div>
 </div>
 <div class="kpi-card kpi-card--green kpi-card--yoy kpi-card--interactive" id="kpiCardRetail" role="button" tabindex="0" aria-expanded="false" aria-controls="ventasKpiDrawer" title="Menudeo. Incluye FLOTGMF si el contrato CRM no es flotilla.">
-<div class="kpi-card-head"><span class="kpi-title">Ventas retail</span><span class="material-symbols-outlined kpi-icon">storefront</span></div>
+<div class="kpi-card-head"><span class="kpi-title">Ventas BMW</span><span class="material-symbols-outlined kpi-icon">storefront</span></div>
 <div id="kpiRetail" class="kpi-value">0</div>
 <div class="kpi-yoy" data-kpi-yoy="totalRetail" hidden>
   <span class="kpi-yoy-badge" data-yoy-badge></span>
@@ -118,7 +114,7 @@ Comisiones
 </div>
 </div>
 <div class="kpi-card kpi-card--slate kpi-card--yoy kpi-card--interactive" id="kpiCardFlotillas" role="button" tabindex="0" aria-expanded="false" aria-controls="ventasKpiDrawer" title="FLOT y FLOTGMF con contrato flotilla. FLOTGMF de menudeo cuenta en retail.">
-<div class="kpi-card-head"><span class="kpi-title">Flotillas</span><span class="material-symbols-outlined kpi-icon">local_shipping</span></div>
+<div class="kpi-card-head"><span class="kpi-title">Ventas MINI</span><span class="material-symbols-outlined kpi-icon">local_shipping</span></div>
 <div id="kpiFlotillas" class="kpi-value">0</div>
 <div class="kpi-yoy" data-kpi-yoy="totalFlotillas" hidden>
   <span class="kpi-yoy-badge" data-yoy-badge></span>
@@ -126,8 +122,8 @@ Comisiones
 </div>
 </div>
 <div class="kpi-card-anchor" id="kpiEntregasSofiaWrap">
-<div class="kpi-card kpi-card--magenta kpi-card--yoy kpi-card--interactive" id="kpiCardEntregasSofia" role="button" tabindex="0" aria-expanded="false" aria-controls="ventasKpiDrawer" title="Ver detalle de entregas SOFIA">
-<div class="kpi-card-head"><span class="kpi-title">Notif. entrega SOFIA</span></div>
+<div class="kpi-card kpi-card--magenta kpi-card--yoy kpi-card--interactive" id="kpiCardEntregasSofia" role="button" tabindex="0" aria-expanded="false" aria-controls="ventasKpiDrawer" title="Ver detalle de Ventas Motorrad">
+<div class="kpi-card-head"><span class="kpi-title">Ventas Motorrad</span><span class="material-symbols-outlined kpi-icon">two_wheeler</span></div>
 <div id="kpiEntregasSofia" class="kpi-value">0</div>
 <p id="kpiEntregasSofiaSub" class="kpi-subtitle">—</p>
 <div class="kpi-yoy" data-kpi-yoy="totalNotificacionesEntrega" hidden>
@@ -186,7 +182,7 @@ Comisiones
 <section id="panelEntregasSofia" class="section-panel dashboard-section kpi-detail-panel hidden" aria-labelledby="kpiCardEntregasSofia">
 <div class="kpi-detail-header">
 <div>
-<h3 class="section-title" style="margin-bottom:6px">Notificaciones de entrega SOFIA</h3>
+<h3 class="section-title" style="margin-bottom:6px">Ventas Motorrad</h3>
 <p id="sofiaPanelResumen" class="section-subtitle" style="margin:0">Seleccione un periodo y consulte.</p>
 </div>
 <button type="button" id="btnCerrarSofiaPanel" class="btn-glass btn-icon-close" aria-label="Cerrar detalle SOFIA">
@@ -252,24 +248,24 @@ Comisiones
 <section id="ventasActMetas" class="ventas-act" aria-labelledby="ventasActMetasLabel">
 <div class="ventas-act__head">
   <span class="ventas-act__label" id="ventasActMetasLabel">2 · Avance vs meta</span>
-  <p class="ventas-act__sub">Qué tan cerca estamos del objetivo GMMX y de entregas SOFIA</p>
+  <p class="ventas-act__sub">Qué tan cerca estamos del objetivo de Ventas BMW y de Ventas Motorrad</p>
 </div>
 
 <section class="chart-grid goal-charts-section" aria-label="Avance de facturas y entregas">
 <div id="goalRetailPanel" class="section-panel goal-chart-panel goal-chart-panel--retail">
 <div class="goal-chart-header">
-<h3 class="section-title goal-chart-title">AVANCE DE FACTURAS GMMX</h3>
+<h3 class="section-title goal-chart-title">AVANCE VENTAS BMW</h3>
 <div class="goal-header-meta">
 <div class="goal-header-objetivo">
 <span class="goal-target-label">Objetivo del periodo</span>
 <div class="goal-target-control">
 <div class="goal-input-shell">
-<input type="number" id="goalRetailInput" class="goal-input-field" min="1" step="1" placeholder="40" inputmode="numeric" aria-label="Objetivo retail en unidades"/>
+<input type="number" id="goalRetailInput" class="goal-input-field" min="1" step="1" placeholder="40" inputmode="numeric" aria-label="Objetivo Ventas BMW en unidades"/>
 <span class="goal-input-unit">unid.</span>
 </div>
 </div>
 </div>
-<div class="goal-header-faltante" id="goalRetailFaltanteWrap" aria-label="Falta para cumplir objetivo GMMX">
+<div class="goal-header-faltante" id="goalRetailFaltanteWrap" aria-label="Falta para cumplir objetivo Ventas BMW">
 <span class="goal-faltante-kicker">Falta para cumplir</span>
 <strong id="goalRetailFaltante" class="goal-faltante-value">—</strong>
 <span id="goalRetailFaltanteHint" class="goal-faltante-hint">objetivo − logradas</span>
@@ -279,7 +275,7 @@ Comisiones
 <div class="goal-chart-body">
 <div class="goal-chart-wrap">
 <div class="goal-chart-ring" aria-hidden="true"></div>
-<canvas id="chartGoalRetail" aria-label="Gráfico de avance retail"></canvas>
+<canvas id="chartGoalRetail" aria-label="Gráfico de avance Ventas BMW"></canvas>
 <div class="goal-chart-center">
 <span id="goalRetailPct" class="goal-chart-pct">0%</span>
 <span id="goalRetailCounts" class="goal-chart-counts">0 logradas</span>
@@ -289,18 +285,18 @@ Comisiones
 </div>
 <div id="goalSofiaPanel" class="section-panel goal-chart-panel goal-chart-panel--sofia">
 <div class="goal-chart-header">
-<h3 class="section-title goal-chart-title">AVANCE DE ENTREGAS SOFIA</h3>
+<h3 class="section-title goal-chart-title">AVANCE VENTAS MOTORRAD</h3>
 <div class="goal-header-meta">
 <div class="goal-header-objetivo">
 <span class="goal-target-label">Objetivo del periodo</span>
 <div class="goal-target-control">
 <div class="goal-input-shell">
-<input type="number" id="goalSofiaInput" class="goal-input-field" min="1" step="1" placeholder="30" inputmode="numeric" aria-label="Objetivo SOFIA en notificaciones"/>
+<input type="number" id="goalSofiaInput" class="goal-input-field" min="1" step="1" placeholder="30" inputmode="numeric" aria-label="Objetivo Ventas Motorrad"/>
 <span class="goal-input-unit">notif.</span>
 </div>
 </div>
 </div>
-<div class="goal-header-faltante" id="goalSofiaFaltanteWrap" aria-label="Falta para cumplir objetivo SOFIA">
+<div class="goal-header-faltante" id="goalSofiaFaltanteWrap" aria-label="Falta para cumplir objetivo Ventas Motorrad">
 <span class="goal-faltante-kicker">Falta para cumplir</span>
 <strong id="goalSofiaFaltante" class="goal-faltante-value">—</strong>
 <span id="goalSofiaFaltanteHint" class="goal-faltante-hint">objetivo − logradas</span>
@@ -310,7 +306,7 @@ Comisiones
 <div class="goal-chart-body">
 <div class="goal-chart-wrap">
 <div class="goal-chart-ring" aria-hidden="true"></div>
-<canvas id="chartGoalSofia" aria-label="Gráfico de avance SOFIA"></canvas>
+<canvas id="chartGoalSofia" aria-label="Gráfico de avance Ventas Motorrad"></canvas>
 <div class="goal-chart-center">
 <span id="goalSofiaPct" class="goal-chart-pct">0%</span>
 <span id="goalSofiaCounts" class="goal-chart-counts">0 logradas</span>
@@ -322,7 +318,8 @@ Comisiones
 
 </section><!-- /ventasActMetas -->
 
-<section id="ventasActComposicion" class="ventas-act" aria-labelledby="ventasActComposicionLabel">
+<!-- OCULTO: 3 · Composición (departamento, antigüedad de origen, tipo de cliente). Al reactivar, quitar class hidden y devolver Ritmo a 4 y Operación a 5. -->
+<section id="ventasActComposicion" class="ventas-act hidden" aria-labelledby="ventasActComposicionLabel">
 <div class="ventas-act__head">
   <span class="ventas-act__label" id="ventasActComposicionLabel">3 · Composición</span>
   <p class="ventas-act__sub">De dónde vienen las ventas y cómo se repartieron las entregas</p>
@@ -392,7 +389,7 @@ Comisiones
 
 <section id="ventasActRitmo" class="ventas-act" aria-labelledby="ventasActRitmoLabel">
 <div class="ventas-act__head">
-  <span class="ventas-act__label" id="ventasActRitmoLabel">4 · Ritmo del año</span>
+  <span class="ventas-act__label" id="ventasActRitmoLabel">3 · Ritmo del año</span>
   <p class="ventas-act__sub">Comparativo interanual y evolución mensual del acumulado</p>
 </div>
 
@@ -415,11 +412,19 @@ Comisiones
 </div>
 </div>
 </div>
-<div class="filter-chips" id="ytdQuarterChips" role="group" aria-label="Trimestres visibles" style="margin:0 0 12px">
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px">
+<div class="filter-chips" id="ytdMarcaChips" role="group" aria-label="Marca" style="margin:0">
+<button type="button" class="chip active" data-ytd-marca="todas" aria-pressed="true">Todas</button>
+<button type="button" class="chip" data-ytd-marca="bmw" aria-pressed="false">BMW</button>
+<button type="button" class="chip" data-ytd-marca="mini" aria-pressed="false">MINI</button>
+<button type="button" class="chip" data-ytd-marca="moto" aria-pressed="false">Motorrad</button>
+</div>
+<div class="filter-chips" id="ytdQuarterChips" role="group" aria-label="Trimestres visibles" style="margin:0">
 <button type="button" class="chip active" data-ytd-quarter="1" aria-pressed="true">T1</button>
 <button type="button" class="chip active" data-ytd-quarter="2" aria-pressed="true">T2</button>
 <button type="button" class="chip active" data-ytd-quarter="3" aria-pressed="true">T3</button>
 <button type="button" class="chip active" data-ytd-quarter="4" aria-pressed="true">T4</button>
+</div>
 </div>
 <div class="chart-card"><div class="chart-wrap chart-wrap-lg"><canvas id="chartYtd"></canvas></div></div>
 </section>
@@ -430,10 +435,10 @@ Comisiones
 <div class="chart-card"><div class="chart-wrap chart-wrap-lg"><canvas id="chartMesTotal"></canvas></div></div>
 </div>
 <div class="chart-grid">
-<div class="section-panel"><h3 class="section-title">Flotillas vs venta retail por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesFlotilla"></canvas></div></div></div>
-<div class="section-panel"><h3 class="section-title">Tipo de venta retail por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesTipo"></canvas></div></div></div>
+<div class="section-panel"><h3 class="section-title">Ventas MINI vs Ventas BMW por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesFlotilla"></canvas></div></div></div>
+<div class="section-panel"><h3 class="section-title">Tipo de venta BMW por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesTipo"></canvas></div></div></div>
 <div class="section-panel"><h3 class="section-title">Ventas por canal por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesCanal"></canvas></div></div></div>
-<div class="section-panel"><h3 class="section-title">Entregas SOFIA por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesEntregasSofia"></canvas></div></div></div>
+<div class="section-panel"><h3 class="section-title">Ventas Motorrad por mes</h3><div class="chart-card"><div class="chart-wrap"><canvas id="chartMesEntregasSofia"></canvas></div></div></div>
 </div>
 <div class="section-panel dashboard-section">
 <h3 class="section-title">5 mejores vendedores por mes</h3>
@@ -445,8 +450,8 @@ Comisiones
 
 <section id="ventasActOperacion" class="ventas-act" aria-labelledby="ventasActOperacionLabel">
 <div class="ventas-act__head">
-  <span class="ventas-act__label" id="ventasActOperacionLabel">5 · Operación</span>
-  <p class="ventas-act__sub">Utilidad por carline, tomas a cuenta y cumplimiento del mix</p>
+  <span class="ventas-act__label" id="ventasActOperacionLabel">4 · Operación</span>
+  <p class="ventas-act__sub">Utilidad por carline y tomas a cuenta</p>
 </div>
 
 <section class="section-panel dashboard-section" id="secCarlineUtilidad" aria-label="Mejor utilidad por carline">
@@ -537,80 +542,6 @@ Detalle
   <p data-ac-empty class="liquidez-note" aria-live="polite">Consulte un periodo para ver el avance de tomas.</p>
   <div class="eeff-edo-kpi-row af-kpi-row" data-ac-row></div>
 </section>
-</div>
-</div>
-</section>
-
-<section class="section-panel dashboard-section" id="secMixAutos" aria-label="Mix de entregas">
-<div class="table-header-row" style="flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
-<div>
-<h3 class="section-title" style="margin-bottom:0">Mix de entregas</h3>
-<p class="section-subtitle" style="margin:4px 0 0">Por carline · real vs meta de la plantilla Objetivos · <span id="mixAutosPeriod">—</span></p>
-</div>
-<button type="button" id="btnMixAutosDetalle" class="btn-glass btn-glass--sm" title="Abrir detalle de unidades">
-<span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px">analytics</span>
-Ver unidades
-</button>
-</div>
-
-<div class="mix-summary" id="mixSummary" aria-label="Cumplimiento y brecha del mix">
-  <div class="mix-summary__grid">
-    <article class="mix-summary__card mix-summary__card--cumplimiento">
-      <span class="mix-summary__kicker">Cumplimiento del mix</span>
-      <strong id="mixSummaryCumplimiento" class="mix-summary__value">—</strong>
-      <span id="mixSummaryCumplimientoHint" class="mix-summary__hint">líneas que ya cubrieron su meta</span>
-      <div class="mix-summary__bar" aria-hidden="true"><span id="mixSummaryCumplimientoBar" class="mix-summary__bar-fill" style="width:0%"></span></div>
-    </article>
-    <article class="mix-summary__card mix-summary__card--volumen">
-      <span class="mix-summary__kicker">Volumen del periodo</span>
-      <strong id="mixSummaryVolumen" class="mix-summary__value mix-summary__value--md">—</strong>
-      <span id="mixSummaryVolumenHint" class="mix-summary__hint">real / meta (facturas)</span>
-    </article>
-    <article class="mix-summary__card mix-summary__card--brecha">
-      <span class="mix-summary__kicker">Desvío total</span>
-      <strong id="mixSummaryBrecha" class="mix-summary__value">—</strong>
-      <span id="mixSummaryBrechaHint" class="mix-summary__hint">suma de |real − meta| por línea</span>
-    </article>
-  </div>
-  <div class="mix-summary__gaps" id="mixSummaryGaps" hidden>
-    <span class="mix-summary__gaps-label">Mayor atraso</span>
-    <div class="mix-summary__chips" id="mixSummaryChips"></div>
-  </div>
-  <p id="mixSummaryEmpty" class="liquidez-note" aria-live="polite">Consulte un periodo para ver cumplimiento y brecha del mix.</p>
-</div>
-
-<div class="chart-card chart-card--interactive" id="chartMixAutosCard" title="Clic en una barra para ver las unidades">
-  <p class="section-subtitle" style="margin:0 0 8px">Meta (gris) vs real · verde = meta cubierta · clic en la barra para ver unidades</p>
-  <div class="chart-wrap chart-wrap-lg"><canvas id="chartMixAutos" aria-label="Gráfico mix real vs meta por carline"></canvas></div>
-</div>
-<div id="mixOtrosControls" class="mix-otros-controls" style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between">
-  <div>
-    <h4 class="section-subtitle" style="margin:0;font-weight:600;color:inherit">Detalle por línea</h4>
-    <span id="mixOtrosMeta" class="section-subtitle" style="margin:0"></span>
-  </div>
-  <button type="button" id="btnMixOtrosToggle" class="btn-glass btn-glass--sm hidden" aria-expanded="true" aria-controls="mixOtrosDetalle">
-    <span class="material-symbols-outlined" aria-hidden="true" style="font-size:18px">unfold_less</span>
-    <span data-mix-otros-label>Ocultar tabla</span>
-  </button>
-</div>
-<div id="mixOtrosDetalle" class="mix-otros-detalle" style="margin-top:10px">
-<p class="section-subtitle" style="margin:0 0 8px">Clic en una fila para ver las unidades de esa línea</p>
-<div class="table-scroll">
-<table class="data-table">
-<thead>
-<tr>
-<th>Línea / carline</th>
-<th class="cell-num">Meta</th>
-<th class="cell-num">Real</th>
-<th class="cell-num">Brecha</th>
-<th class="cell-num">Avance</th>
-<th>Estado</th>
-</tr>
-</thead>
-<tbody id="mixOtrosBody">
-<tr class="empty-row"><td colspan="6">Consulte un periodo.</td></tr>
-</tbody>
-</table>
 </div>
 </div>
 </section>
@@ -1019,11 +950,8 @@ Ver unidades
 <button type="button" class="chip" data-af-metric="pruebasManejo">Pruebas</button>
 </div>
 </div>
-<div class="filter-chips" id="afYtdCentroChips" role="group" aria-label="Centro de trabajo" style="margin:8px 0 0">
+<div class="filter-chips" id="afYtdCentroChips" role="group" aria-label="Marca" style="margin:8px 0 0">
 <button type="button" class="chip active" data-af-centro="todos">Todos</button>
-<button type="button" class="chip" data-af-centro="cholula">Cholula</button>
-<button type="button" class="chip" data-af-centro="zacatelco">Zacatelco</button>
-<button type="button" class="chip" data-af-centro="matriz">Matriz Serdan</button>
 </div>
 <div class="filter-chips" id="afYtdQuarterChips" role="group" aria-label="Trimestres visibles" style="margin:10px 0 6px">
 <button type="button" class="chip active" data-af-quarter="1" aria-pressed="true">T1</button>
@@ -1137,127 +1065,6 @@ Ver unidades
 
 </div>
 
-<div id="panelVentasComisiones" class="sales-main-panel hidden" data-sales-panel="comisiones" hidden>
-
-<section id="secComisiones" class="section-panel dashboard-section fi-section" aria-label="Comisiones">
-<div class="fi-section-header" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between">
-<div>
-<h2 class="section-title" style="margin-bottom:6px">Comisiones</h2>
-<p id="comisionesSubtitle" class="section-subtitle" style="margin:0">Elija el tipo de comisión y consulte el periodo.</p>
-</div>
-<div class="comisiones-controls" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-<label class="filter-field" for="comisionTipo">
-<span class="filter-label">Tipo de comisión</span>
-<select id="comisionTipo" class="filter-input">
-<option value="fi">Comisiones F&amp;I</option>
-</select>
-</label>
-<button type="button" id="btnGenerarComisiones" class="btn-glass">
-<span class="material-symbols-outlined" aria-hidden="true">calculate</span>
-Generar
-</button>
-<button type="button" id="btnExportComisiones" class="btn-glass" disabled>
-<span class="material-symbols-outlined" aria-hidden="true">download</span>
-Exportar CSV
-</button>
-</div>
-</div>
-
-<div id="comisionesNotas" class="section-subtitle" style="margin:8px 0 12px"></div>
-
-<div id="comisionesKpis" class="kpi-grid" style="margin-bottom:16px">
-<div class="kpi-card kpi-card--blue">
-<div class="kpi-card-head"><span class="kpi-title">Contratos</span></div>
-<div id="comKpiContratos" class="kpi-value">—</div>
-</div>
-<div class="kpi-card kpi-card--green">
-<div class="kpi-card-head"><span class="kpi-title">Pool F&amp;I</span></div>
-<div id="comKpiPool" class="kpi-value">—</div>
-</div>
-<div class="kpi-card kpi-card--violet">
-<div class="kpi-card-head"><span class="kpi-title">Pool AFI (20%)</span></div>
-<div id="comKpiAfi" class="kpi-value">—</div>
-</div>
-<div class="kpi-card kpi-card--slate">
-<div class="kpi-card-head"><span class="kpi-title">Total a depositar</span></div>
-<div id="comKpiDepositar" class="kpi-value">—</div>
-</div>
-</div>
-
-<div class="chart-grid-2-1" style="margin-bottom:16px">
-<div class="chart-card">
-<h3 class="section-title" style="margin-bottom:8px;font-size:15px">Por concepto</h3>
-<div class="table-scroll">
-<table class="data-table">
-<thead>
-<tr>
-<th>Concepto</th>
-<th class="cell-num">Monto</th>
-<th class="cell-num">Com. asesor</th>
-<th class="cell-num">Base</th>
-<th class="cell-num">Com. F&amp;I</th>
-</tr>
-</thead>
-<tbody id="comConceptoBody">
-<tr><td colspan="5" class="empty-row">Genere la liquidación del periodo.</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="chart-card">
-<h3 class="section-title" style="margin-bottom:8px;font-size:15px">Total a depositar</h3>
-<div class="table-scroll">
-<table class="data-table">
-<thead>
-<tr>
-<th>Puesto</th>
-<th>Sucursal</th>
-<th>Nombre</th>
-<th class="cell-num">Contratos</th>
-<th class="cell-num">Depositar</th>
-</tr>
-</thead>
-<tbody id="comDepositoBody">
-<tr><td colspan="5" class="empty-row">—</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-
-<div class="chart-card" style="margin-bottom:16px">
-<div class="kpi-detail-toolbar" style="margin-bottom:8px">
-<h3 class="section-title" style="margin:0;font-size:15px">Detalle por contrato</h3>
-<label class="kpi-detail-search" for="buscarComisiones">
-<span class="material-symbols-outlined kpi-detail-search-icon" aria-hidden="true">search</span>
-<input id="buscarComisiones" type="search" placeholder="Buscar cliente, VIN, F&amp;I, AFI..." class="filter-input kpi-detail-search-input" autocomplete="off"/>
-</label>
-</div>
-<div class="table-scroll">
-<table class="data-table">
-<thead>
-<tr>
-<th>Fecha</th>
-<th>Cliente</th>
-<th>F&amp;I</th>
-<th>AFI</th>
-<th>VIN</th>
-<th class="cell-num">MAF F&amp;I</th>
-<th class="cell-num">GAP F&amp;I</th>
-<th class="cell-num">Gtía F&amp;I</th>
-<th class="cell-num">Total F&amp;I</th>
-</tr>
-</thead>
-<tbody id="comDetalleBody">
-<tr><td colspan="9" class="empty-row">Genere la liquidación del periodo.</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-</section>
-
-</div>
-
 <div id="acKpiFloatBackdrop" class="bg-kpi-float-backdrop hidden" aria-hidden="true"></div>
 <aside id="acKpiFloat" class="bg-kpi-float hidden" role="dialog" aria-modal="true" aria-labelledby="acKpiFloatTitle"></aside>
 
@@ -1268,16 +1075,15 @@ Exportar CSV
 <script src="/js/auth-client.js"></script>
 <script src="/js/shared.js?v=7"></script>
 <script src="/js/canales.js?v=3"></script>
-<script src="/js/sidebar.js?v=11"></script>
-<script src="/js/topbar.js?v=23"></script>
+<script src="/js/sidebar.js?v=12"></script>
+<script src="/js/topbar.js?v=27"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/kpi-insights.js?v=13"></script>
 <script src="/js/assistant-bubble.js?v=6"></script>
 <script src="/js/financiamiento.js?v=64"></script>
 <script src="/js/leads.js?v=33"></script>
-<script src="/js/afluencia.js?v=18"></script>
-<script src="/js/comisiones.js?v=2"></script>
+<script src="/js/afluencia.js?v=19"></script>
 <script src="/js/analisisComercial.js?v=19"></script>
-<script src="/js/sales.js?v=125"></script>
+<script src="/js/sales.js?v=132"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
     { id: 'contabilidad', href: '/contabilidad.html', icon: 'account_balance', label: 'Contabilidad' },
     { id: 'forecast', href: '/forecast.html', icon: 'timeline', label: 'Pronóstico' },
     { id: 'seguimiento', href: '/seguimiento.html', icon: 'person_search', label: 'Seguimiento 360' },
+    { id: 'bonos', href: '/bonos.html', icon: 'workspace_premium', label: 'Sistema de Bonos' },
     { id: 'admin', href: '/admin.html', icon: 'admin_panel_settings', label: 'Administración' },
   ];
 
