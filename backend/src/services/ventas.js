@@ -4,7 +4,12 @@ const { getNotificacionesEntrega, computeCoberturaSofia, annotateFlotillaGmfCont
 const { getComparativoYtd, buildYtdRanges } = require('./ytd-comparativo');
 const { getMejorUtilidadPorCarline } = require('./utilidadCarlineService');
 const { getInventory } = require('./inventoryService');
-const { getIncadeaVentasPeriodo, aplicarConteosIncadea } = require('./incadeaVentas');
+const {
+  getIncadeaVentasPeriodo,
+  getIncadeaAsesorPorVin,
+  incadeaVentasHabilitado,
+  aplicarConteosIncadea,
+} = require('./incadeaVentas');
 
 const TIPO_VENTA_CASE = `
   CASE VTE_FORMAPAGO
@@ -88,23 +93,30 @@ async function annotateDemosFromSofDemo(rows = []) {
   const vins = [...new Set(list.map((r) => normalizeVinKey(r.VTE_SERIE)).filter(Boolean))];
   if (!vins.length) return list;
 
-  const pool = await getPool();
-  const req = pool.request();
-  const params = vins.map((vin, i) => {
-    const name = `vin${i}`;
-    req.input(name, sql.VarChar(32), vin);
-    return `@${name}`;
-  });
-  const result = await req.query(`
-    SELECT
-      UPPER(REPLACE(LTRIM(RTRIM(DEMO_VIN)), ' ', '')) AS vin,
-      DEMO_Estatus AS estatus,
-      DEMO_Resultado AS resultado,
-      DEMO_ResDescrip AS descripcion,
-      DEMO_FechAct AS fecha
-    FROM SOF_DEMO
-    WHERE UPPER(REPLACE(LTRIM(RTRIM(DEMO_VIN)), ' ', '')) IN (${params.join(',')})
-  `);
+  let result;
+  try {
+    const pool = await getPool();
+    const req = pool.request();
+    const params = vins.map((vin, i) => {
+      const name = `vin${i}`;
+      req.input(name, sql.VarChar(32), vin);
+      return `@${name}`;
+    });
+    result = await req.query(`
+      SELECT
+        UPPER(REPLACE(LTRIM(RTRIM(DEMO_VIN)), ' ', '')) AS vin,
+        DEMO_Estatus AS estatus,
+        DEMO_Resultado AS resultado,
+        DEMO_ResDescrip AS descripcion,
+        DEMO_FechAct AS fecha
+      FROM SOF_DEMO
+      WHERE UPPER(REPLACE(LTRIM(RTRIM(DEMO_VIN)), ' ', '')) IN (${params.join(',')})
+    `);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (/Invalid object name|Invalid column name/i.test(msg)) return list;
+    throw err;
+  }
 
   /** vin → fecha dd/mm/yyyy del último FIS EXITO/OK (timbrado de salida demo). */
   const timbradoSalidaByVin = new Map();
@@ -1079,6 +1091,50 @@ const VENTAS_SOFIA_CORE_TTL_MS = 5 * 60 * 1000;
 const ventasSofiaCoreCache = new Map();
 const ventasSofiaCoreInflight = new Map();
 
+async function finalizarRegistrosVentas(rows, { omitirSofDemo = false } = {}) {
+  const base = markDemoVentasRows(reclassifyFlotgmfMenudeo(enrichVentasRows(rows || [])));
+  if (omitirSofDemo) return base;
+  return annotateDemosFromSofDemo(base);
+}
+
+function vendedorVentasVacio(valor) {
+  const texto = String(valor || '').trim();
+  return !texto || texto === '—' || /^\(?\s*sin\s*(dato|vendedor|asesor)/i.test(texto);
+}
+
+async function fusionarAsesorIncadea(rows, inicio, fin) {
+  if (!incadeaVentasHabilitado() || !rows?.length) return rows;
+  let map;
+  try {
+    map = await getIncadeaAsesorPorVin({ inicio, fin });
+  } catch (err) {
+    console.warn('[ventas] Asesor Incadea no disponible:', err.message);
+    return rows;
+  }
+  if (!map?.size) return rows;
+  return rows.map((row) => {
+    const hit = map.get(String(row.VTE_SERIE || '').trim().toUpperCase());
+    if (!hit?.nombre) return row;
+    if (String(row.VENDEDOR || '').trim() === hit.nombre) return row;
+    return {
+      ...row,
+      VENDEDOR: hit.nombre,
+      VENDEDOR_CODIGO: hit.codigo || row.VENDEDOR_CODIGO || null,
+    };
+  });
+}
+
+async function cargarVentasIncadeaCore({ fechaInicio, fechaFin, inicio, fin, incluirPorMes }) {
+  const core = await getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, incluirPorMes });
+  const sofiaEntregas = core.sofiaEntregas || { registrosEntrega: core.entregasSofia || [] };
+  return {
+    registros: await finalizarRegistrosVentas(core.registros || [], { omitirSofDemo: true }),
+    sofiaEntregas,
+    entregasSofia: sofiaEntregas.registrosEntrega ?? core.entregasSofia ?? [],
+    fuente: 'incadea',
+  };
+}
+
 /**
  * Núcleo compartido: facturas DMS + entregas SOFIA del periodo.
  * Usado por /api/ventas y por el dashboard de financiamiento para pintar todo de una vez.
@@ -1111,24 +1167,38 @@ async function getVentasSofiaCore({ fechaInicio, fechaFin, incluirPorMes = false
     request.input('fechaFin', sql.Date, fin);
 
     let data;
-    try {
-      const [result, sofiaEntregas] = await Promise.all([
-        request.query(buildVentasQuery()),
-        getNotificacionesEntrega({ fechaInicio, fechaFin, incluirPorMes, fresh }),
-      ]);
-      data = {
-        registros: await annotateDemosFromSofDemo(
-          markDemoVentasRows(reclassifyFlotgmfMenudeo(enrichVentasRows(result.recordset))),
-        ),
-        sofiaEntregas,
-        entregasSofia: sofiaEntregas.registrosEntrega ?? [],
-      };
-    } catch (err) {
-      const msg = String(err?.message || '');
-      if (!/Invalid column name|Invalid object name/i.test(msg)) throw err;
-      console.warn('[ventas] El esquema anterior no está en esta base. Se usa Incadea:', msg);
-      data = await getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, incluirPorMes });
+    if (incadeaVentasHabilitado()) {
+      try {
+        data = await cargarVentasIncadeaCore({ fechaInicio, fechaFin, inicio, fin, incluirPorMes });
+      } catch (err) {
+        console.warn('[ventas] Incadea no disponible, se intenta DMS:', err.message);
+      }
     }
+
+    if (!data) {
+      try {
+        const [result, sofiaEntregas] = await Promise.all([
+          request.query(buildVentasQuery()),
+          getNotificacionesEntrega({ fechaInicio, fechaFin, incluirPorMes, fresh }),
+        ]);
+        data = {
+          registros: await finalizarRegistrosVentas(result.recordset),
+          sofiaEntregas,
+          entregasSofia: sofiaEntregas.registrosEntrega ?? [],
+          fuente: 'dms',
+        };
+      } catch (err) {
+        const msg = String(err?.message || '');
+        if (!/Invalid column name|Invalid object name|no es v[aá]lido/i.test(msg)) throw err;
+        console.warn('[ventas] El esquema anterior no está en esta base. Se usa Incadea:', msg);
+        data = await cargarVentasIncadeaCore({ fechaInicio, fechaFin, inicio, fin, incluirPorMes });
+      }
+    }
+
+    if (data?.registros?.length) {
+      data.registros = await fusionarAsesorIncadea(data.registros, inicio, fin);
+    }
+
     ventasSofiaCoreCache.set(cacheKey, { at: Date.now(), data });
     return data;
   })();

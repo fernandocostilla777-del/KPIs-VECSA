@@ -91,22 +91,25 @@ function getGoals({ fechaInicio, fechaFin }) {
   const historic = monthInfo ? getHistoricForMonth(monthInfo.month) : null;
 
   const retailSaved = period.retail ?? null;
+  const miniSaved = period.mini ?? null;
   const sofiaSaved = period.sofia ?? null;
 
   return {
     fechaInicio,
     fechaFin,
     retail: retailSaved ?? historic?.retail ?? null,
+    mini: miniSaved ?? historic?.mini ?? null,
     sofia: sofiaSaved ?? historic?.sofia ?? null,
     updatedAt: period.updatedAt ?? null,
     updatedBy: period.updatedBy ?? null,
     retailSource: retailSaved != null ? 'saved' : (historic ? 'historic' : null),
+    miniSource: miniSaved != null ? 'saved' : (historic ? 'historic' : null),
     sofiaSource: sofiaSaved != null ? 'saved' : (historic ? 'historic' : null),
     historicMonth: historic?.label ?? null,
   };
 }
 
-function setGoals({ fechaInicio, fechaFin, retail, sofia, updatedBy }) {
+function setGoals({ fechaInicio, fechaFin, retail, mini, sofia, updatedBy }) {
   if (!fechaInicio || !fechaFin) {
     throw new Error('fechaInicio y fechaFin son requeridos.');
   }
@@ -120,6 +123,7 @@ function setGoals({ fechaInicio, fechaFin, retail, sofia, updatedBy }) {
   };
 
   if (retail !== undefined) next.retail = parseGoal(retail);
+  if (mini !== undefined) next.mini = parseGoal(mini);
   if (sofia !== undefined) next.sofia = parseGoal(sofia);
   if (updatedBy) next.updatedBy = String(updatedBy);
 
@@ -144,6 +148,10 @@ function seedHistoricGoals(year = 2026) {
 
     if (prev.retail == null && entry.retail > 0) {
       prev.retail = entry.retail;
+      periodChanged = true;
+    }
+    if (prev.mini == null && entry.mini > 0) {
+      prev.mini = entry.mini;
       periodChanged = true;
     }
     if (prev.sofia == null && entry.sofia > 0) {

@@ -1,7 +1,7 @@
 ﻿(function () {
   'use strict';
 
-  const SALES_JS_BUILD = 125;
+  const SALES_JS_BUILD = 136;
   if (window.__salesPageInitBuild === SALES_JS_BUILD) return;
 
   let registrosActuales = [];
@@ -427,6 +427,7 @@
   let chartColors = null;
   let CANAL_COLORS = null;
   let goalActualRetail = 0;
+  let goalActualMini = 0;
   let goalActualSofia = 0;
   let resumenActual = null;
   let compactFilters = null;
@@ -437,7 +438,26 @@
 
   const GOAL_STORAGE_KEYS = {
     retail: 'autointel_goal_retail',
+    mini: 'autointel_goal_mini',
     sofia: 'autointel_goal_sofia',
+  };
+
+  const GOAL_BRAND = {
+    retail: {
+      mainColor: '#27AE60',
+      unitLabel: 'unidades',
+      unitShort: 'unid.',
+    },
+    mini: {
+      mainColor: '#64748B',
+      unitLabel: 'unidades',
+      unitShort: 'unid.',
+    },
+    sofia: {
+      mainColor: '#E056FD',
+      unitLabel: 'notificaciones',
+      unitShort: 'notif.',
+    },
   };
   let goalsSaveTimer = null;
   /** Solo Administración (canManageUsers) puede editar; el resto solo lee el valor compartido. */
@@ -445,7 +465,7 @@
 
   function applyGoalEditMode() {
     const editable = Boolean(canEditGoals);
-    [els.goalRetailInput, els.goalSofiaInput].forEach((input) => {
+    [els.goalRetailInput, els.goalMiniInput, els.goalSofiaInput].forEach((input) => {
       if (!input) return;
       input.readOnly = !editable;
       input.tabIndex = editable ? 0 : -1;
@@ -454,6 +474,7 @@
         : 'Solo Administración puede modificar este objetivo';
     });
     els.goalRetailPanel?.classList.toggle('goal-chart-panel--readonly', !editable);
+    els.goalMiniPanel?.classList.toggle('goal-chart-panel--readonly', !editable);
     els.goalSofiaPanel?.classList.toggle('goal-chart-panel--readonly', !editable);
   }
 
@@ -480,10 +501,11 @@
     const data = await res.json();
 
     if (els.goalRetailInput) els.goalRetailInput.value = data.retail ?? '';
+    if (els.goalMiniInput) els.goalMiniInput.value = data.mini ?? '';
     if (els.goalSofiaInput) els.goalSofiaInput.value = data.sofia ?? '';
     updateGoalHistoricLabels(data);
 
-    const needsMigrate = canEditGoals && data.retail == null && data.sofia == null;
+    const needsMigrate = canEditGoals && data.retail == null && data.mini == null && data.sofia == null;
     if (needsMigrate) {
       const legacyRetail = localStorage.getItem(GOAL_STORAGE_KEYS.retail);
       const legacySofia = localStorage.getItem(GOAL_STORAGE_KEYS.sofia);
@@ -498,25 +520,19 @@
   }
 
   function updateGoalHistoricLabels(data) {
-    const retailLabel = els.goalRetailPanel?.querySelector('.goal-target-label');
-    const sofiaLabel = els.goalSofiaPanel?.querySelector('.goal-target-label');
     const month = data?.historicMonth;
-    const baseRetail = month && data.retailSource === 'historic'
-      ? `Objetivo del periodo · histórico ${month}`
-      : 'Objetivo del periodo';
-    const baseSofia = month && data.sofiaSource === 'historic'
-      ? `Objetivo del periodo · histórico ${month}`
-      : 'Objetivo del periodo';
-    if (retailLabel) {
-      retailLabel.textContent = canEditGoals
-        ? baseRetail
-        : `${baseRetail} · solo Administración edita`;
-    }
-    if (sofiaLabel) {
-      sofiaLabel.textContent = canEditGoals
-        ? baseSofia
-        : `${baseSofia} · solo Administración edita`;
-    }
+    const labelFor = (sourceKey) => {
+      const base = month && data?.[sourceKey] === 'historic'
+        ? `Objetivo del periodo · histórico ${month}`
+        : 'Objetivo del periodo';
+      return canEditGoals ? base : `${base} · solo Administración edita`;
+    };
+    const retailLabel = els.goalRetailPanel?.querySelector('.goal-target-label');
+    const miniLabel = els.goalMiniPanel?.querySelector('.goal-target-label');
+    const sofiaLabel = els.goalSofiaPanel?.querySelector('.goal-target-label');
+    if (retailLabel) retailLabel.textContent = labelFor('retailSource');
+    if (miniLabel) miniLabel.textContent = labelFor('miniSource');
+    if (sofiaLabel) sofiaLabel.textContent = labelFor('sofiaSource');
   }
 
   async function persistSharedGoals() {
@@ -526,13 +542,14 @@
     if (!fechaInicio || !fechaFin) return;
 
     const retail = getGoalValue('retail') || null;
+    const mini = getGoalValue('mini') || null;
     const sofia = getGoalValue('sofia') || null;
 
     const res = await fetch('/api/ventas/objetivos', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ fechaInicio, fechaFin, retail, sofia }),
+      body: JSON.stringify({ fechaInicio, fechaFin, retail, mini, sofia }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -654,9 +671,19 @@
   }
 
   function getGoalValue(which) {
-    const input = which === 'retail' ? els.goalRetailInput : els.goalSofiaInput;
+    const input = which === 'retail'
+      ? els.goalRetailInput
+      : which === 'mini'
+        ? els.goalMiniInput
+        : els.goalSofiaInput;
     const value = parseInt(input?.value, 10);
     return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  function goalActualFor(which) {
+    if (which === 'retail') return goalActualRetail;
+    if (which === 'mini') return goalActualMini;
+    return goalActualSofia;
   }
 
   function saveGoal() {
@@ -691,8 +718,6 @@
   function renderKpiVisualBars(resumen) {
     const total = Math.max(resumen.totalVentas || 0, 1);
     const goalSofia = getGoalValue('sofia');
-    const numerador = resumen.numeradorCobertura
-      ?? ((resumen.totalNotificacionesEntrega ?? 0) + (resumen.totalUnidadesFacturadasNoTimbradas ?? 0));
 
     setKpiBarFill('total', 100);
     setKpiBarFill('retail', ((resumen.totalRetail ?? 0) / total) * 100);
@@ -701,7 +726,6 @@
     setKpiBarFill('carryOver', goalSofia > 0
       ? (((resumen.numeradorCobertura ?? 0) + (resumen.unidadesApartadas ?? 0)) / goalSofia) * 100
       : 0);
-    setKpiBarFill('cobertura', goalSofia > 0 ? (numerador / goalSofia) * 100 : 0);
   }
 
   function formatYoyPct(value) {
@@ -989,9 +1013,16 @@
   }
 
   function updateGoalProgress(which, actual, goal) {
-    const isRetail = which === 'retail';
-    const progressEl = isRetail ? els.goalRetailProgress : els.goalSofiaProgress;
-    const trackEl = isRetail ? els.goalRetailProgressTrack : els.goalSofiaProgressTrack;
+    const progressEl = which === 'retail'
+      ? els.goalRetailProgress
+      : which === 'sofia'
+        ? els.goalSofiaProgress
+        : null;
+    const trackEl = which === 'retail'
+      ? els.goalRetailProgressTrack
+      : which === 'sofia'
+        ? els.goalSofiaProgressTrack
+        : null;
     const safeActual = Number.isFinite(actual) ? actual : 0;
 
     if (!progressEl || !trackEl) return;
@@ -1012,14 +1043,14 @@
   }
 
   function updateGoalFaltante(which, actual, goal) {
-    const isRetail = which === 'retail';
-    const valueEl = document.getElementById(isRetail ? 'goalRetailFaltante' : 'goalSofiaFaltante');
-    const hintEl = document.getElementById(isRetail ? 'goalRetailFaltanteHint' : 'goalSofiaFaltanteHint');
-    const wrapEl = document.getElementById(isRetail ? 'goalRetailFaltanteWrap' : 'goalSofiaFaltanteWrap');
+    const prefix = which === 'retail' ? 'goalRetail' : which === 'mini' ? 'goalMini' : 'goalSofia';
+    const valueEl = document.getElementById(`${prefix}Faltante`);
+    const hintEl = document.getElementById(`${prefix}FaltanteHint`);
+    const wrapEl = document.getElementById(`${prefix}FaltanteWrap`);
     if (!valueEl) return;
 
     const safeActual = Number.isFinite(actual) ? actual : 0;
-    const unit = isRetail ? 'unid.' : 'notif.';
+    const unit = GOAL_BRAND[which]?.unitShort || 'unid.';
     if (!goal || goal <= 0) {
       valueEl.textContent = '—';
       valueEl.classList.remove('is-complete', 'is-pending');
@@ -1052,16 +1083,36 @@
   }
 
   function renderGoalChart(which, actual, goal) {
-    const isRetail = which === 'retail';
-    const canvasId = isRetail ? 'chartGoalRetail' : 'chartGoalSofia';
-    const chartName = isRetail ? 'goalRetail' : 'goalSofia';
-    const pctEl = isRetail ? els.goalRetailPct : els.goalSofiaPct;
-    const countsEl = isRetail ? els.goalRetailCounts : els.goalSofiaCounts;
-    const panelEl = isRetail ? els.goalRetailPanel : els.goalSofiaPanel;
-    const mainColor = isRetail ? '#27AE60' : '#E056FD';
+    const brand = GOAL_BRAND[which] || GOAL_BRAND.retail;
+    const canvasId = which === 'retail'
+      ? 'chartGoalRetail'
+      : which === 'mini'
+        ? 'chartGoalMini'
+        : 'chartGoalSofia';
+    const chartName = which === 'retail'
+      ? 'goalRetail'
+      : which === 'mini'
+        ? 'goalMini'
+        : 'goalSofia';
+    const pctEl = which === 'retail'
+      ? els.goalRetailPct
+      : which === 'mini'
+        ? els.goalMiniPct
+        : els.goalSofiaPct;
+    const countsEl = which === 'retail'
+      ? els.goalRetailCounts
+      : which === 'mini'
+        ? els.goalMiniCounts
+        : els.goalSofiaCounts;
+    const panelEl = which === 'retail'
+      ? els.goalRetailPanel
+      : which === 'mini'
+        ? els.goalMiniPanel
+        : els.goalSofiaPanel;
+    const mainColor = brand.mainColor;
     const exceedColor = '#F59E0B';
     const trackColor = '#DDE3EC';
-    const unitLabel = isRetail ? 'unidades' : 'notificaciones';
+    const unitLabel = brand.unitLabel;
 
     const safeActual = Number.isFinite(actual) ? actual : 0;
     let chartData;
@@ -1133,51 +1184,37 @@
     });
   }
 
-  function renderCoberturaKpi() {
-    if (!els.kpiCobertura || !resumenActual) return;
-
-    const goal = getGoalValue('sofia');
-    const reportadas = resumenActual.totalNotificacionesEntrega ?? 0;
-    const facturadas = resumenActual.totalUnidadesFacturadas ?? resumenActual.totalVentas ?? 0;
-    const noTimbradas = resumenActual.totalUnidadesFacturadasNoTimbradas ?? Math.max(0, facturadas - reportadas);
-    const numerador = resumenActual.numeradorCobertura ?? (reportadas + noTimbradas);
-
-    if (!goal) {
-      els.kpiCobertura.textContent = String(numerador);
-      els.kpiCardCobertura?.classList.remove('kpi-card--complete');
-      setKpiBarFill('cobertura', 0);
-      return;
-    }
-
-    const pct = (numerador / goal) * 100;
-    els.kpiCobertura.textContent = pct > 999 ? '+999.00%' : `${pct.toFixed(2)}%`;
-    els.kpiCardCobertura?.classList.toggle('kpi-card--complete', numerador >= goal);
-    setKpiBarFill('cobertura', (numerador / goal) * 100);
-    renderCarryOverKpi();
-  }
-
   function renderGoalCharts(resumen) {
     goalActualRetail = resumen?.totalRetail ?? 0;
+    goalActualMini = resumen?.totalFlotillas ?? 0;
     goalActualSofia = resumen?.totalNotificacionesEntrega ?? 0;
     renderGoalChart('retail', goalActualRetail, getGoalValue('retail'));
+    renderGoalChart('mini', goalActualMini, getGoalValue('mini'));
     renderGoalChart('sofia', goalActualSofia, getGoalValue('sofia'));
   }
 
   function onGoalInputChange(which) {
     if (!canEditGoals) return;
     saveGoal();
-    updateGoalHistoricLabels({ retailSource: 'saved', sofiaSource: 'saved' });
-    const actual = which === 'retail' ? goalActualRetail : goalActualSofia;
-    renderGoalChart(which, actual, getGoalValue(which));
+    updateGoalHistoricLabels({
+      retailSource: 'saved',
+      miniSource: 'saved',
+      sofiaSource: 'saved',
+    });
+    renderGoalChart(which, goalActualFor(which), getGoalValue(which));
     if (which === 'sofia') {
-      renderCoberturaKpi();
+      renderCarryOverKpi();
       if (resumenActual) renderKpiVisualBars(resumenActual);
     }
   }
 
   function adjustGoal(which, delta) {
     if (!canEditGoals) return;
-    const input = which === 'retail' ? els.goalRetailInput : els.goalSofiaInput;
+    const input = which === 'retail'
+      ? els.goalRetailInput
+      : which === 'mini'
+        ? els.goalMiniInput
+        : els.goalSofiaInput;
     if (!input) return;
     const current = parseInt(input.value, 10);
     const base = Number.isFinite(current) && current > 0 ? current : 0;
@@ -1894,7 +1931,7 @@
     return rows.map((row) => {
       const esFlotilla = isFlotillaRow(row);
       return `<tr class="${esFlotilla ? 'row-flotilla' : ''}">
-        <td>${row.VTE_FECHDOCTO ?? ''}</td><td>${row.VTE_DOCTO ?? ''}</td><td>${row.VENDEDOR ?? ''}</td>
+        <td>${row.VTE_FECHDOCTO ?? ''}</td><td>${row.VTE_DOCTO ?? ''}</td><td>${escapeHtml(ventasAsesorLabel(row))}</td>
         <td>${row.CLIENTE ?? ''}</td><td>${row.VTE_SERIE ?? ''}</td><td>${row.VEH_TIPOAUTO ?? ''}</td>
         <td>${row.VEH_ANMODELO ?? ''}</td><td>${row.COL_DESCRIPCION ?? ''}</td><td>${row.CANAL_LABEL ?? ''}</td>
         <td><span class="badge-tipo ${esFlotilla ? 'badge-flotilla' : ''}">${row.TIPOVENTA ?? ''}</span></td>
@@ -1956,6 +1993,21 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function ventasAsesorLabel(row) {
+    const raw = String(
+      row?.VENDEDOR ?? row?.vendedor ?? row?.VENDEDOR_CODIGO ?? '',
+    ).trim();
+    if (!raw || raw === '—' || /^\(?\s*sin\s*(dato|vendedor|asesor)/i.test(raw)) return 'Sin asesor';
+    return raw;
+  }
+
+  function ventasDetalleAsesorLine(row) {
+    return `<p class="ops-orders-drawer__asesor" role="group" aria-label="Asesor de ventas">
+      <span class="ops-orders-drawer__asesor-label">Asesor</span>
+      <strong>${escapeHtml(ventasAsesorLabel(row))}</strong>
+    </p>`;
   }
 
   function countByField(rows, keyFn) {
@@ -2637,12 +2689,12 @@
           return carline === value;
         }
         if (dim === 'canal') return String(r.CANAL_LABEL || 'Sin canal') === value;
-        if (dim === 'vendedor') return String(r.VENDEDOR || 'Sin vendedor') === value;
+        if (dim === 'vendedor') return ventasAsesorLabel(r) === value;
         if (dim === 'tipo') return String(r.TIPOVENTA || 'Sin tipo') === value;
       }
       if (currentMeta.kpi === 'retail' || currentMeta.kpi === 'flotilla') {
         if (dim === 'canal') return String(r.CANAL_LABEL || 'Sin canal') === value;
-        if (dim === 'vendedor') return String(r.VENDEDOR || 'Sin vendedor') === value;
+        if (dim === 'vendedor') return ventasAsesorLabel(r) === value;
         if (dim === 'tipo') return String(r.TIPOVENTA || 'Sin tipo') === value;
         if (dim === 'modelo') return String(r.VEH_TIPOAUTO || 'Sin modelo') === value;
       }
@@ -2845,7 +2897,7 @@
           </div>
           ${block('Carline / modelo', 'carline', withMixPct(topCarlines))}
           ${block('Tipo venta', 'tipo', withMixPct(countByField(rows, (r) => r.TIPOVENTA)))}
-          ${block('Vendedor', 'vendedor', withMixPct(countByField(rows, (r) => r.VENDEDOR)))}
+          ${block('Vendedor', 'vendedor', withMixPct(countByField(rows, (r) => ventasAsesorLabel(r))))}
         `;
         return;
       }
@@ -2870,7 +2922,7 @@
         ${block(
           canalFilter ? 'Vendedores de la fuerza' : 'Vendedor',
           'vendedor',
-          countByField(scoped, (r) => r.VENDEDOR)
+          countByField(scoped, (r) => ventasAsesorLabel(r))
         )}
         ${vendedorFilter
           ? block('Canal', 'canal', countByField(scoped, (r) => r.CANAL_LABEL))
@@ -3001,13 +3053,14 @@
                 <strong>${escapeHtml(r.VTE_SERIE || 'Sin serie')}</strong>
                 <span class="ops-orders-drawer__tag">${escapeHtml(normalizeCarlineLabel(r.VEH_TIPOAUTO) || '—')}</span>
               </div>
-              <p class="ops-orders-drawer__msg">${escapeHtml(r.CLIENTE || '—')} · ${escapeHtml(r.VENDEDOR || '—')}</p>
+              ${ventasDetalleAsesorLine(r)}
+              <p class="ops-orders-drawer__msg">${escapeHtml(r.CLIENTE || '—')}</p>
               <div class="ops-orders-drawer__facts">
                 <span>${escapeHtml(r.VTE_FECHDOCTO || '—')}</span>
                 <span>${escapeHtml(r.TIPOVENTA || '—')}</span>
-                <span>${escapeHtml(r.COL_DESCRIPCION || '—')}</span>
+                <span>${escapeHtml(r.CANAL_LABEL || '—')}</span>
               </div>
-              <p class="ops-orders-drawer__sub">Doc. ${escapeHtml(r.VTE_DOCTO || '—')} · ${escapeHtml(r.CANAL_LABEL || '—')}</p>
+              <p class="ops-orders-drawer__sub">Doc. ${escapeHtml(r.VTE_DOCTO || '—')} · ${escapeHtml(r.CANAL_LABEL || '—')} · ${escapeHtml(r.COL_DESCRIPCION || '—')}</p>
             </div>`).join('')}`;
         return;
       }
@@ -3022,7 +3075,8 @@
               <strong>${escapeHtml(r.VTE_SERIE || 'Sin serie')}</strong>
               <span class="ops-orders-drawer__tag">${escapeHtml(r.TIPOVENTA || '—')}</span>
             </div>
-            <p class="ops-orders-drawer__msg">${escapeHtml(r.CLIENTE || '—')} · ${escapeHtml(r.VENDEDOR || '—')}</p>
+            ${ventasDetalleAsesorLine(r)}
+            <p class="ops-orders-drawer__msg">${escapeHtml(r.CLIENTE || '—')}</p>
             <div class="ops-orders-drawer__facts">
               <span>${escapeHtml(r.VTE_FECHDOCTO || '—')}</span>
               <span>${escapeHtml(r.VEH_TIPOAUTO || '—')}</span>
@@ -3356,7 +3410,7 @@
     const q = term.trim().toLowerCase();
     if (!q) return base;
     return base.filter((row) =>
-      [row.VTE_FECHDOCTO, row.VTE_DOCTO, row.VENDEDOR, row.CLIENTE, row.VTE_SERIE, row.VEH_TIPOAUTO, row.VEH_ANMODELO, row.COL_DESCRIPCION, row.CANAL_LABEL, row.TIPOVENTA, row.FORMAPAGO_ORIGINAL]
+      [row.VTE_FECHDOCTO, row.VTE_DOCTO, row.VENDEDOR, ventasAsesorLabel(row), row.CLIENTE, row.VTE_SERIE, row.VEH_TIPOAUTO, row.VEH_ANMODELO, row.COL_DESCRIPCION, row.CANAL_LABEL, row.TIPOVENTA, row.FORMAPAGO_ORIGINAL]
         .some((val) => String(val || '').toLowerCase().includes(q))
     );
   }
@@ -3495,7 +3549,6 @@
         ensureApartadasInResumen(data).catch((err) => console.warn('[Carry over]', err.message)),
       ]);
       renderCarryOverKpi();
-      renderCoberturaKpi();
       renderKpiVisualBars(resumenActual);
       renderKpiYoy(comparativoPeriodoActual);
       updateTopBarSummary(resumen);
@@ -3791,8 +3844,6 @@
       btnCerrarVentasPanel: document.getElementById('btnCerrarVentasPanel'),
       kpiEntregasSofia: document.getElementById('kpiEntregasSofia'),
       kpiEntregasSofiaSub: document.getElementById('kpiEntregasSofiaSub'),
-      kpiCardCobertura: document.getElementById('kpiCardCobertura'),
-      kpiCobertura: document.getElementById('kpiCobertura'),
       kpiCardEntregasSofia: document.getElementById('kpiCardEntregasSofia'),
       btnRefreshEntregasSofia: document.getElementById('btnRefreshEntregasSofia'),
       panelEntregasSofia: document.getElementById('panelEntregasSofia'),
@@ -3833,12 +3884,16 @@
       kpiMenorMes: document.getElementById('kpiMenorMes'),
       kpiAcumuladoAnio: document.getElementById('kpiAcumuladoAnio'),
       goalRetailInput: document.getElementById('goalRetailInput'),
+      goalMiniInput: document.getElementById('goalMiniInput'),
       goalSofiaInput: document.getElementById('goalSofiaInput'),
       goalRetailPanel: document.getElementById('goalRetailPanel'),
+      goalMiniPanel: document.getElementById('goalMiniPanel'),
       goalSofiaPanel: document.getElementById('goalSofiaPanel'),
       goalRetailPct: document.getElementById('goalRetailPct'),
+      goalMiniPct: document.getElementById('goalMiniPct'),
       goalSofiaPct: document.getElementById('goalSofiaPct'),
       goalRetailCounts: document.getElementById('goalRetailCounts'),
+      goalMiniCounts: document.getElementById('goalMiniCounts'),
       goalSofiaCounts: document.getElementById('goalSofiaCounts'),
       goalRetailProgress: document.getElementById('goalRetailProgress'),
       goalSofiaProgress: document.getElementById('goalSofiaProgress'),
@@ -4114,6 +4169,8 @@
 
     els.goalRetailInput?.addEventListener('input', () => onGoalInputChange('retail'));
     els.goalRetailInput?.addEventListener('change', () => onGoalInputChange('retail'));
+    els.goalMiniInput?.addEventListener('input', () => onGoalInputChange('mini'));
+    els.goalMiniInput?.addEventListener('change', () => onGoalInputChange('mini'));
     els.goalSofiaInput?.addEventListener('input', () => onGoalInputChange('sofia'));
     els.goalSofiaInput?.addEventListener('change', () => onGoalInputChange('sofia'));
 

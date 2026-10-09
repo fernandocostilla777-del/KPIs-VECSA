@@ -6,7 +6,7 @@
 <title>Rendimiento de Ventas | VECSA BMW</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="/css/dashboard.css?v=145" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=147" rel="stylesheet"/>
 <script src="/js/theme.js?v=1"></script>
 </head>
 <body class="dashboard-body" data-page="sales">
@@ -93,7 +93,7 @@ Afluencia
 <section id="ventasActResultado" class="ventas-act" aria-labelledby="ventasActResultadoLabel">
 <div class="ventas-act__head">
   <span class="ventas-act__label" id="ventasActResultadoLabel">1 · Resultado del periodo</span>
-  <p class="ventas-act__sub">Ventas BMW, Ventas MINI, Ventas Motorrad, cobertura y carry over</p>
+  <p class="ventas-act__sub">Ventas BMW, Ventas MINI, Ventas Motorrad y carry over</p>
 </div>
 
 <section class="kpi-grid kpi-grid--yoy">
@@ -141,14 +141,6 @@ Afluencia
 <p id="kpiCarryOverSub" class="kpi-subtitle">Apartadas SEP · clic para % y detalle</p>
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 </button>
-<div class="kpi-card kpi-card--violet kpi-card--yoy" id="kpiCardCobertura" title="Cobertura = (reportadas SOFIA + sin timbrar) / objetivo SOFIA. Excluye FLOT y FLOTGMF con contrato flotilla (Sheets col. AO).">
-<div class="kpi-card-head"><span class="kpi-title">Cobertura</span><span class="material-symbols-outlined kpi-icon">donut_large</span></div>
-<div id="kpiCobertura" class="kpi-value">—</div>
-<div class="kpi-yoy" data-kpi-yoy="numeradorCobertura" hidden>
-  <span class="kpi-yoy-badge" data-yoy-badge></span>
-  <span class="kpi-yoy-prior" data-yoy-prior></span>
-</div>
-</div>
 </section>
 <p id="ventasDemosNota" class="liquidez-note ventas-demos-nota hidden" aria-live="polite"></p>
 
@@ -248,7 +240,7 @@ Afluencia
 <section id="ventasActMetas" class="ventas-act" aria-labelledby="ventasActMetasLabel">
 <div class="ventas-act__head">
   <span class="ventas-act__label" id="ventasActMetasLabel">2 · Avance vs meta</span>
-  <p class="ventas-act__sub">Qué tan cerca estamos del objetivo de Ventas BMW y de Ventas Motorrad</p>
+  <p class="ventas-act__sub">Objetivo del periodo: Ventas BMW, Ventas MINI y Ventas Motorrad</p>
 </div>
 
 <section class="chart-grid goal-charts-section" aria-label="Avance de facturas y entregas">
@@ -279,6 +271,37 @@ Afluencia
 <div class="goal-chart-center">
 <span id="goalRetailPct" class="goal-chart-pct">0%</span>
 <span id="goalRetailCounts" class="goal-chart-counts">0 logradas</span>
+</div>
+</div>
+</div>
+</div>
+<div id="goalMiniPanel" class="section-panel goal-chart-panel goal-chart-panel--mini">
+<div class="goal-chart-header">
+<h3 class="section-title goal-chart-title">AVANCE VENTAS MINI</h3>
+<div class="goal-header-meta">
+<div class="goal-header-objetivo">
+<span class="goal-target-label">Objetivo del periodo</span>
+<div class="goal-target-control">
+<div class="goal-input-shell">
+<input type="number" id="goalMiniInput" class="goal-input-field" min="1" step="1" placeholder="12" inputmode="numeric" aria-label="Objetivo Ventas MINI en unidades"/>
+<span class="goal-input-unit">unid.</span>
+</div>
+</div>
+</div>
+<div class="goal-header-faltante" id="goalMiniFaltanteWrap" aria-label="Falta para cumplir objetivo Ventas MINI">
+<span class="goal-faltante-kicker">Falta para cumplir</span>
+<strong id="goalMiniFaltante" class="goal-faltante-value">—</strong>
+<span id="goalMiniFaltanteHint" class="goal-faltante-hint">objetivo − logradas</span>
+</div>
+</div>
+</div>
+<div class="goal-chart-body">
+<div class="goal-chart-wrap">
+<div class="goal-chart-ring" aria-hidden="true"></div>
+<canvas id="chartGoalMini" aria-label="Gráfico de avance Ventas MINI"></canvas>
+<div class="goal-chart-center">
+<span id="goalMiniPct" class="goal-chart-pct">0%</span>
+<span id="goalMiniCounts" class="goal-chart-counts">0 logradas</span>
 </div>
 </div>
 </div>
@@ -1084,6 +1107,6 @@ Detalle
 <script src="/js/leads.js?v=33"></script>
 <script src="/js/afluencia.js?v=19"></script>
 <script src="/js/analisisComercial.js?v=19"></script>
-<script src="/js/sales.js?v=132"></script>
+<script src="/js/sales.js?v=136"></script>
 </body>
 </html>

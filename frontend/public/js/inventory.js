@@ -3444,9 +3444,12 @@ function renderAgeingSlowTable(rows = filteredAgeingSlowRows()) {
     const costoNeto = costoNetoConBonif(r);
     const bonif = Number(r.bonificacion || 0);
     const notaSinIva = notaCreditoSinIva(r);
+    const utilidadHint = r.precioReferencia === 'promedio'
+      ? 'Precio promedio − costo de compra'
+      : `${vendidas.toLocaleString('es-MX')} vendida${vendidas === 1 ? '' : 's'}`;
     const utilidadCell = utilidad == null
-      ? '<span class="ageing-slow-hint">Sin histórico</span>'
-      : `<strong>${fmt.money(utilidad)}</strong><span class="ageing-slow-hint">${vendidas.toLocaleString('es-MX')} vendida${vendidas === 1 ? '' : 's'}</span>`;
+      ? '<span class="ageing-slow-hint">Sin precio ni costo</span>'
+      : `<strong>${fmt.money(utilidad)}</strong><span class="ageing-slow-hint">${utilidadHint}</span>`;
     const extrasCell = renderExtrasCell(r, fmt);
     const pisoCell = generaInteres && planPiso > 0
       ? `<strong>${fmt.money(planPiso)}</strong><span class="ageing-slow-hint">${pisoSuperaUtilidad ? 'Come utilidad' : '+30 días'}</span>`
@@ -3468,7 +3471,7 @@ function renderAgeingSlowTable(rows = filteredAgeingSlowRows()) {
       <td class="ageing-slow-carline"><strong>${escapeHtml(carline)}</strong></td>
       <td class="ageing-slow-version" title="${escapeHtml(versionLabel)}"><span>${escapeHtml(versionLabel)}</span></td>
       <td class="ageing-slow-vin" title="${escapeHtml(vin)}">${escapeHtml(vin)}</td>
-      <td class="cell-num">${r.precio ? fmt.money(r.precio) : '—'}</td>
+      <td class="cell-num">${r.precio ? `<strong>${fmt.money(r.precio)}</strong>${r.precioReferencia === 'promedio' ? `<span class="ageing-slow-hint">Promedio · ${Number(r.unidadesVendidas || 0).toLocaleString('es-MX')} ventas</span>` : ''}` : '—'}</td>
       <td class="cell-num">${costoCell}</td>
       <td class="cell-num ageing-slow-nota">${notaCell}</td>
       <td class="cell-num ageing-slow-utilidad">${utilidadCell}</td>
@@ -3728,6 +3731,7 @@ function renderCharts(data) {
   renderAgeingCarlineFilterTabs(ageingCarlineFilters);
   renderAgeingSlowTable();
   renderInventarioLectura(inventarioLectura);
+  setAgeingVista(ageingVistaModo);
 
   destroyChart(ageingChart);
   ageingChart = null;
@@ -3850,13 +3854,13 @@ function invCoberturaColor(banda) {
   return '#94a3b8';
 }
 
-let ageingVista = 'tabla';
+let ageingVistaModo = 'tabla';
 
 function setAgeingVista(vista) {
-  ageingVista = vista === 'cobertura' ? 'cobertura' : 'tabla';
-  const esCobertura = ageingVista === 'cobertura';
-  document.querySelectorAll('#ageingVista [data-ageing-vista]').forEach((el) => {
-    const on = el.dataset.ageingVista === ageingVista;
+  ageingVistaModo = vista === 'cobertura' ? 'cobertura' : 'tabla';
+  const esCobertura = ageingVistaModo === 'cobertura';
+  document.querySelectorAll('#ageingVistaToggle [data-ageing-vista]').forEach((el) => {
+    const on = el.dataset.ageingVista === ageingVistaModo;
     el.classList.toggle('is-active', on);
     el.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
@@ -3868,6 +3872,15 @@ function setAgeingVista(vista) {
   destinoAnalisis?.classList.toggle('hidden', !esCobertura);
   document.getElementById('ageingTablaWrap')?.classList.toggle('hidden', esCobertura);
   document.getElementById('ageingSort')?.classList.toggle('hidden', esCobertura);
+  const avisoCobertura = document.getElementById('ageingVistaCoberturaAviso');
+  const medibles = (inventarioLectura?.cobertura?.items || [])
+    .filter((row) => row.banda !== 'sin_ventas' && row.dias != null);
+  if (avisoCobertura) {
+    avisoCobertura.classList.toggle('hidden', !esCobertura || medibles.length > 0);
+    avisoCobertura.textContent = esCobertura && !medibles.length
+      ? 'Sin ventas recientes por carline para calcular cobertura.'
+      : '';
+  }
   if (invLecturaCharts.cobertura) {
     requestAnimationFrame(() => invLecturaCharts.cobertura?.resize());
   }
@@ -4119,6 +4132,39 @@ function renderInventarioLectura(lectura) {
   }
 }
 
+function mesEvaluadoInventario() {
+  const el = document.getElementById('invMesEvaluado');
+  if (el && !el.value) {
+    const now = new Date();
+    el.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  return el?.value || '';
+}
+
+function renderGestionInventario(g) {
+  const { setText } = Dashboard;
+  const card = document.getElementById('kpiGestionInventario');
+  card?.classList.remove('kpi-card--green', 'kpi-card--rose', 'kpi-card--slate');
+  if (!g) {
+    card?.classList.add('kpi-card--slate');
+    setText('sGestionInv', '—');
+    setText('sGestionInvSub', 'Sin evaluación');
+    return;
+  }
+  if (g.datosEjemplo || g.cumple == null) {
+    card?.classList.add('kpi-card--slate');
+    setText('sGestionInv', `${g.pctEntero ?? 0}%`);
+    const objetivo = g.objetivoEtiqueta == null
+      ? 'Sin objetivo'
+      : (g.objetivoPlantilla ? `Objetivo plantilla ${g.objetivoEtiqueta}%` : `Objetivo ${g.objetivoEtiqueta}%`);
+    setText('sGestionInvSub', `${objetivo} · patio ${g.patioEtiqueta || 'sin captura'}`);
+    return;
+  }
+  card?.classList.add(g.cumple ? 'kpi-card--green' : 'kpi-card--rose');
+  setText('sGestionInv', g.cumple ? 'Cumple' : 'No cumple');
+  setText('sGestionInvSub', `${g.pctEntero ?? 0}% · patio VDC ${g.patioVdc}`);
+}
+
 async function loadInventory({ onlyPlanPiso = false, quiet = false } = {}) {
   const { fmt, api, showLoading, setText } = Dashboard;
   const status = document.getElementById('statusBadge');
@@ -4132,7 +4178,8 @@ async function loadInventory({ onlyPlanPiso = false, quiet = false } = {}) {
   }
 
   try {
-    const data = await api(`/inventory?planPisoPeriod=${encodeURIComponent(period)}`);
+    const mes = mesEvaluadoInventario();
+    const data = await api(`/inventory?planPisoPeriod=${encodeURIComponent(period)}&mes=${encodeURIComponent(mes)}`);
     const s = data.summary;
     lastInventorySummary = s;
     lastInventoryPlanPisoPeriod = period;
@@ -4193,26 +4240,34 @@ async function loadInventory({ onlyPlanPiso = false, quiet = false } = {}) {
           : `${fmt.number(s.coberturaFuera || 0)} carlines fuera de banda`,
       );
       {
+        const a120 = s.ageing120;
         const ageingN = Number(s.ageingAlertsCount ?? s.urgentAlerts ?? 0);
-        const availableN = Number(s.available || 0);
-        const exposicionPct = availableN > 0
-          ? Math.round((ageingN / availableN) * 1000) / 10
-          : null;
-        setText('sAlerts', fmt.number(ageingN));
-        const pisoTxt = `Plan piso ${fmt.currency(s.ageingAlertsPlanPisoTotal || 0)}`;
-        const pct90Txt = `${s.pct90 ?? 0}% con +90 días`;
-        setText(
-          'sAlertsSub',
-          exposicionPct == null
-            ? `Físico 60+ · ${pct90Txt} · ${pisoTxt}`
-            : `C-3 · ${exposicionPct}% a 60+ · ${pct90Txt} · ${pisoTxt}`,
-        );
+        if (a120 && a120.total != null) {
+          setText('sAlerts', `${a120.pct}%`);
+          setText(
+            'sAlertsSub',
+            `${fmt.number(a120.antiguos)} de ${fmt.number(a120.total)} (−${fmt.number(a120.antiguosBloqueo)} con bloqueo)`,
+          );
+        } else {
+          setText('sAlerts', '—');
+          setText('sAlertsSub', 'Sin unidades con fecha de ingreso');
+        }
         const ageingCard = document.getElementById('kpiAgeingAlerts');
         if (ageingCard) {
-          ageingCard.classList.toggle('kpi-card--warn', exposicionPct != null && exposicionPct >= 15 && exposicionPct < 30);
-          ageingCard.classList.toggle('kpi-card--critical', exposicionPct != null && exposicionPct >= 30);
+          ageingCard.classList.remove('kpi-card--warn', 'kpi-card--critical');
         }
-        setText('urgentBadge', `${ageingN} FÍSICO`);
+        const corteEl = document.getElementById('invMesCorte');
+        if (corteEl) {
+          corteEl.textContent = s.corteEsFotoActual
+            ? `El corte ${s.corteInventario || ''} todavía no llega. Se muestra la foto de hoy.`
+            : `Corte ${s.corteInventario || ''}.`;
+        }
+        setText('urgentBadge', `${fmt.number(ageingN)} FÍSICO`);
+        try {
+          renderGestionInventario(await api(`/bonos/incadea/inventario?mes=${encodeURIComponent(mes)}`));
+        } catch {
+          renderGestionInventario(null);
+        }
       }
       setText('lastUpdated', `Actualizado: ${new Date().toLocaleTimeString('es-MX')}`);
       renderAlerts(data.stockAlerts || [], s.ageingAlertsPlanPisoTotal || 0);
@@ -6273,6 +6328,7 @@ function setIntHistRefreshing(active) {
 }
 
 async function loadIntercambiosHistorico({ quiet = false } = {}) {
+  if (document.getElementById('secIntercambiosHistorico')?.classList.contains('hidden')) return;
   const { api } = Dashboard;
   const inicioEl = document.getElementById('intHistFechaInicio');
   const finEl = document.getElementById('intHistFechaFin');
@@ -6427,9 +6483,9 @@ document.getElementById('ageingCarlineFilterTabs')?.addEventListener('click', (e
   renderAgeingCarlineFilterTabs();
   renderAgeingSlowTable();
 });
-document.getElementById('ageingVista')?.addEventListener('click', (e) => {
+document.getElementById('secAnalisisInventario')?.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-ageing-vista]');
-  if (!btn) return;
+  if (!btn || !document.getElementById('ageingVistaToggle')?.contains(btn)) return;
   setAgeingVista(btn.dataset.ageingVista);
 });
 document.getElementById('ageingSort')?.addEventListener('click', (e) => {
@@ -6469,6 +6525,9 @@ else if (params.get('tab') === 'cierre') setInventoryScope('cierre');
 else setInventoryScope('autos');
 
 initPlanPisoKpiCard();
+document.getElementById('invMesEvaluado')?.addEventListener('change', () => {
+  loadInventory({ quiet: false });
+});
 initIntercambiosHistoricoDates({ force: true });
 initVendidosPeriod();
 Dashboard.initDateFilter?.({

@@ -1,6 +1,12 @@
 const { getPool, sql } = require('../db');
+const incadeaDb = require('../incadea/db');
 const { leerPrivado } = require('../incadea/privateStore');
 const { tabla } = require('../incadea/queries');
+
+async function requestIncadea() {
+  const pool = incadeaDb.configurado() ? await incadeaDb.obtenerPool() : await getPool();
+  return pool.request();
+}
 
 function empresaIncadea() {
   try {
@@ -41,11 +47,15 @@ function filaVenta(row) {
   const bucket = marcaDe(row.marca);
   const fecha = fechaCorta(row.fechaVenta);
   const vin = String(row.vin || '').trim();
+  const factura = String(row.factura || '').trim();
   const modelo = String(row.modelo || row.modeloCodigo || '').trim();
+  const vendedor = String(row.vendedor || row.vendedorCodigo || '').trim();
   return {
     VTE_FECHDOCTO: fecha,
-    VTE_DOCTO: vin,
-    VENDEDOR: String(row.vendedor || '').trim() || '—',
+    VTE_DOCTO: factura || vin,
+    VTE_FACTURA: factura || null,
+    VENDEDOR: vendedor || '—',
+    VENDEDOR_CODIGO: String(row.vendedorCodigo || '').trim() || null,
     CLIENTE: String(row.cliente || '').trim() || '—',
     VTE_SERIE: vin,
     VEH_TIPOAUTO: modelo || '—',
@@ -102,7 +112,8 @@ function sqlMovimientosFactura(empresa) {
   const facturaHdr = tabla(empresa, 'Sales Invoice Header');
   const credito = tabla(empresa, 'Sales Credit Memo Line');
   const cliente = tabla(empresa, 'Customer');
-  return { vehiculo, factura, facturaHdr, credito, cliente };
+  const vendedor = tabla(empresa, 'Salesperson_Purchaser');
+  return { vehiculo, factura, facturaHdr, credito, cliente, vendedor };
 }
 
 async function getIncadeaConteosPorMes({
@@ -182,13 +193,54 @@ async function getIncadeaConteosPorMes({
   return result.recordset || [];
 }
 
-async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, incluirPorMes = false } = {}) {
+function parseFechaVentas(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  const texto = String(value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    throw new Error('Fecha invalida. Use formato YYYY-MM-DD.');
+  }
+  return new Date(`${texto}T12:00:00`);
+}
+
+function vinKey(vin) {
+  return String(vin || '').trim().toUpperCase();
+}
+
+function acumularMovimientosVnPorVin(recordset) {
+  const porVin = new Map();
+  for (const row of recordset || []) {
+    const vin = String(row.vin || '').trim();
+    if (!vin) continue;
+    let acc = porVin.get(vin);
+    if (!acc) {
+      acc = { neto: 0, row: null };
+      porVin.set(vin, acc);
+    }
+    acc.neto += Number(row.signo) * Number(row.qty || 0);
+    if (Number(row.signo) > 0 && (!acc.row || new Date(row.fechaVenta) >= new Date(acc.row.fechaVenta))) {
+      acc.row = row;
+    }
+  }
+  return porVin;
+}
+
+function incadeaVentasHabilitado() {
+  if (incadeaDb.configurado()) return true;
+  try {
+    const mapeo = leerPrivado('incadea-mapeo', { opcional: true, porDefecto: null });
+    return Boolean(mapeo?.data?.empresa);
+  } catch {
+    return false;
+  }
+}
+
+async function sqlVentasVnPeriodo(dInicio, dFin) {
   const empresa = empresaIncadea();
-  const { vehiculo, factura, facturaHdr, credito, cliente } = sqlMovimientosFactura(empresa);
-  const pool = await getPool();
-  const result = await pool.request()
-    .input('fechaInicio', sql.Date, inicio)
-    .input('fechaFin', sql.Date, fin)
+  const { vehiculo, factura, facturaHdr, credito, cliente, vendedor } = sqlMovimientosFactura(empresa);
+  const reqVentas = await requestIncadea();
+  return reqVentas
+    .input('fechaInicio', sql.Date, dInicio)
+    .input('fechaFin', sql.Date, dFin)
     .query(`
       SELECT
         LTRIM(RTRIM(l.[VIN])) AS vin,
@@ -202,11 +254,13 @@ async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, inc
         v.[Model Year] AS anioModelo,
         v.[Make Code] AS marca,
         v.[Vehicle Status] AS estatus,
-        v.[Dealer Salesperson Code] AS vendedor,
+        LTRIM(RTRIM(ISNULL(h.[Salesperson Code], ISNULL(v.[Dealer Salesperson Code], '')))) AS vendedorCodigo,
+        LTRIM(RTRIM(ISNULL(sp.[Name], ISNULL(h.[Salesperson Code], ISNULL(v.[Dealer Salesperson Code], ''))))) AS vendedor,
         h.[Sell-to Customer Name] AS cliente
       FROM ${factura} l
       INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
       LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+      LEFT JOIN ${vendedor} sp ON sp.[Code] = h.[Salesperson Code]
       LEFT JOIN ${vehiculo} v ON LTRIM(RTRIM(v.[VIN])) = LTRIM(RTRIM(l.[VIN]))
       WHERE l.[Posting Date] >= @fechaInicio
         AND l.[Posting Date] < DATEADD(day, 1, @fechaFin)
@@ -230,6 +284,7 @@ async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, inc
         NULL AS anioModelo,
         NULL AS marca,
         NULL AS estatus,
+        NULL AS vendedorCodigo,
         NULL AS vendedor,
         NULL AS cliente
       FROM ${credito} l
@@ -241,21 +296,33 @@ async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, inc
         AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
         AND l.[Gen_ Prod_ Posting Group] LIKE 'VN%'
     `);
+}
 
-  const porVin = new Map();
-  for (const row of result.recordset || []) {
-    const vin = String(row.vin || '').trim();
-    if (!vin) continue;
-    let acc = porVin.get(vin);
-    if (!acc) {
-      acc = { neto: 0, row: null };
-      porVin.set(vin, acc);
-    }
-    acc.neto += Number(row.signo) * Number(row.qty || 0);
-    if (Number(row.signo) > 0 && (!acc.row || new Date(row.fechaVenta) >= new Date(acc.row.fechaVenta))) {
-      acc.row = row;
-    }
+/**
+ * VIN → asesor de la última factura VN neta del periodo (cabecera de factura Incadea).
+ */
+async function getIncadeaAsesorPorVin({ fechaInicio, fechaFin, inicio, fin } = {}) {
+  const dInicio = inicio || parseFechaVentas(fechaInicio);
+  const dFin = fin || parseFechaVentas(fechaFin);
+  const result = await sqlVentasVnPeriodo(dInicio, dFin);
+  const porVin = acumularMovimientosVnPorVin(result.recordset);
+  const map = new Map();
+  for (const [vin, acc] of porVin) {
+    if (acc.neto <= 0 || !acc.row) continue;
+    const codigo = String(acc.row.vendedorCodigo || '').trim();
+    const nombre = String(acc.row.vendedor || '').trim();
+    const etiqueta = nombre || codigo;
+    if (!etiqueta) continue;
+    map.set(vinKey(vin), { codigo: codigo || null, nombre: etiqueta });
   }
+  return map;
+}
+
+async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, incluirPorMes = false } = {}) {
+  const dInicio = inicio || parseFechaVentas(fechaInicio);
+  const dFin = fin || parseFechaVentas(fechaFin);
+  const result = await sqlVentasVnPeriodo(dInicio, dFin);
+  const porVin = acumularMovimientosVnPorVin(result.recordset);
 
   const bmw = [];
   const mini = [];
@@ -281,7 +348,7 @@ async function getIncadeaVentasPeriodo({ fechaInicio, fechaFin, inicio, fin, inc
     registros: [...bmw, ...mini],
     sofiaEntregas: {
       registrosEntrega: moto,
-      entregasPorMes: incluirPorMes ? entregasPorMes(moto, inicio, fin) : null,
+      entregasPorMes: incluirPorMes ? entregasPorMes(moto, dInicio, dFin) : null,
       totalNotificacionesEntrega: moto.length,
       totalEntregasSinPrevias: moto.length,
       totalEntregasConPrevias: 0,
@@ -333,8 +400,8 @@ async function getIncadeaTomasRegistros({ inicio, fin }) {
   const creditoLin = tabla(empresa, 'Sales Credit Memo Line');
   const vehiculo = tabla(empresa, 'Vehicle');
   const vendedor = tabla(empresa, 'Salesperson_Purchaser');
-  const pool = await getPool();
-  const result = await pool.request()
+  const reqTomas = await requestIncadea();
+  const result = await reqTomas
     .input('fechaInicio', sql.Date, inicio)
     .input('fechaFin', sql.Date, fin)
     .query(`
@@ -452,6 +519,8 @@ module.exports = {
   getIncadeaVentasPeriodo,
   getIncadeaConteosPorMes,
   getIncadeaTomasRegistros,
+  getIncadeaAsesorPorVin,
+  incadeaVentasHabilitado,
   aplicarConteosIncadea,
   marcaDe,
 };

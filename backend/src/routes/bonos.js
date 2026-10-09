@@ -54,4 +54,8 @@ router.get('/incadea/validacion/estatus', (req, res, next) => {
   sendAsync(res, next, () => incadea.getValidacionEstatus());
 });
 
+router.get('/incadea/inventario', (req, res, next) => {
+  sendAsync(res, next, () => incadea.getGestionInventario({ mes: req.query.mes || '' }));
+});
+
 module.exports = router;

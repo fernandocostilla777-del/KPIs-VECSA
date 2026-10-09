@@ -26,7 +26,10 @@ function marcaVisible(codigo) {
  * Estatus 0 = físico, 2 = demo, 5 = evento/tránsito. Seminuevos (VU) no entran.
  */
 async function getIncadeaInventarioNuevos() {
-  const vehiculo = tabla(empresaIncadea(), 'Vehicle');
+  const empresa = empresaIncadea();
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const compra = tabla(empresa, 'Purch_ Invoice Line');
+  const compraHdr = tabla(empresa, 'Purch_ Invoice Header');
   const pool = await getPool();
   const result = await pool.request().query(`
     SELECT
@@ -57,8 +60,19 @@ async function getIncadeaInventarioNuevos() {
         WHEN ISNULL(v.[Last Direct Cost], 0) > 0 THEN v.[Last Direct Cost]
         WHEN ISNULL(v.[Average Cost], 0) > 0 THEN v.[Average Cost]
         ELSE 0
-      END AS costo
+      END AS costo,
+      ISNULL(compra.importe, 0) AS costoCompra
     FROM ${vehiculo} v
+    OUTER APPLY (
+      SELECT TOP 1 pl.[Amount] AS importe
+      FROM ${compra} pl
+      INNER JOIN ${compraHdr} ph ON ph.[No_] = pl.[Document No_]
+      WHERE LTRIM(RTRIM(pl.[VIN])) = LTRIM(RTRIM(v.[VIN]))
+        AND pl.[Type] = 2
+        AND pl.[Quantity] > 0
+        AND ISNULL(pl.[Amount], 0) > 0
+      ORDER BY ph.[Posting Date] DESC, pl.[Document No_] DESC
+    ) compra
     WHERE v.[Vehicle Status] IN (0, 2, 5)
       AND (
         v.[Inventory Posting Group] LIKE 'VN%'
@@ -66,41 +80,61 @@ async function getIncadeaInventarioNuevos() {
       )
   `);
 
-  return (result.recordset || []).map((row) => ({
-    VEH_TIPOAUTO: String(row.modelo || '').trim(),
-    UNC_FAMILIA: marcaVisible(row.marca),
-    VEH_NOINVENTA: 1,
-    VEH_CATALOGO: String(row.catalogo || '').trim(),
-    VEH_ANMODELO: row.anio == null ? '' : String(row.anio).trim(),
-    VEH_NUMSERIE: String(row.vin || '').trim(),
-    VEH_NOMOTOR: '',
-    VEH_COLOEXTE: '',
-    COL_DESCRIPCION: '',
-    VEH_COLOINTE: '',
-    COLINTE: '',
-    VEH_OBSERVACION: String(row.grupo || '').trim(),
-    VEH_FECREMISION: row.fechaIngreso,
-    VEH_UBICACION: String(row.ubicacion || '').trim(),
-    VEH_SITUACION: row.situacion,
-    VEH_FECHSEP: '',
-    VEH_PERAPAR: '',
-    VEH_CVEUSU: '',
-    IMPORTE_REMISION: 0,
-    GASTOS_REMISION: 0,
-    PREVIAS: 0,
-    PREVIAS_DETALLE: '',
-    PRECIO_LISTA: Number(row.precio) || 0,
-    VEH_VENTA: Number(row.precio) || 0,
-    VEH_COSTO1: Number(row.costo) || 0,
-    VEH_REBATE: 0,
-    VEH_MISELANEOS: 0,
-  }));
+  return (result.recordset || []).map((row) => {
+    const { costoNeto, baseBruta, precio } = costosIncadeaFila(row);
+    return {
+      VEH_TIPOAUTO: String(row.modelo || '').trim(),
+      UNC_FAMILIA: carlineDe(row.grupo, row.marca),
+      VEH_NOINVENTA: 1,
+      VEH_CATALOGO: String(row.catalogo || '').trim(),
+      VEH_ANMODELO: row.anio == null ? '' : String(row.anio).trim(),
+      VEH_NUMSERIE: String(row.vin || '').trim(),
+      VEH_NOMOTOR: '',
+      VEH_COLOEXTE: '',
+      COL_DESCRIPCION: '',
+      VEH_COLOINTE: '',
+      COLINTE: '',
+      VEH_OBSERVACION: String(row.grupo || '').trim(),
+      VEH_FECREMISION: row.fechaIngreso,
+      VEH_UBICACION: String(row.ubicacion || '').trim(),
+      VEH_SITUACION: row.situacion,
+      VEH_FECHSEP: '',
+      VEH_PERAPAR: '',
+      VEH_CVEUSU: '',
+      IMPORTE_REMISION: baseBruta,
+      GASTOS_REMISION: 0,
+      PREVIAS: 0,
+      PREVIAS_DETALLE: '',
+      PRECIO_LISTA: precio,
+      VEH_VENTA: precio,
+      VEH_COSTO1: costoNeto,
+      VEH_REBATE: 0,
+      VEH_MISELANEOS: 0,
+    };
+  });
 }
 
 function dinero(n) {
   const x = Number(n);
   if (!Number.isFinite(x)) return 0;
   return Math.round(x * 100) / 100;
+}
+
+/** Montos de compra en Incadea suelen traer IVA; ventas y utilidad usan base sin IVA. */
+function montoSinIva(n) {
+  const bruto = Number(n) || 0;
+  if (bruto <= 0) return 0;
+  return dinero(bruto / 1.16);
+}
+
+function costosIncadeaFila(row) {
+  const compraBruta = Number(row.costoCompra) || 0;
+  const costoUnidad = Number(row.costo) || 0;
+  const baseBruta = compraBruta || costoUnidad;
+  const costoNeto = montoSinIva(compraBruta) || montoSinIva(costoUnidad) || costoUnidad;
+  const precioLista = Number(row.precio) || 0;
+  const precio = precioLista > 1 ? (montoSinIva(precioLista) || precioLista) : 0;
+  return { costoNeto, baseBruta, precio };
 }
 
 function isoFecha(value) {
@@ -447,11 +481,13 @@ function carlineDe(grupo, marca) {
   const serie = {
     S1: 'Serie 1', S2: 'Serie 2', S3: 'Serie 3', S4: 'Serie 4',
     S5: 'Serie 5', S7: 'Serie 7', S8: 'Serie 8',
-    IX1: 'iX1', IX3: 'iX3', I4: 'i4', I5: 'i5', I7: 'i7',
+    IX: 'iX', IX1: 'iX1', IX3: 'iX3', I3: 'iX3', I4: 'i4', I5: 'i5', I7: 'i7',
+    X1: 'X1', X2: 'X2', X3: 'X3', X4: 'X4', X5: 'X5', X6: 'X6', X7: 'X7', XM: 'XM',
   };
-  if (texto.startsWith('VNB')) return serie[sufijo] || sufijo || 'BMW';
-  if (texto.startsWith('VNM')) return 'MINI';
-  if (texto.startsWith('VNT')) return 'Motorrad';
+  const familia = texto.slice(0, 3);
+  if (familia === 'VNB' || familia === 'VDB') return serie[sufijo] || sufijo || 'BMW';
+  if (familia === 'VNM' || familia === 'VDM') return 'MINI';
+  if (familia === 'VNT' || familia === 'VDT') return 'Motorrad';
   return marcaVisible(marca);
 }
 
@@ -476,6 +512,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
   const credito = tabla(empresa, 'Sales Credit Memo Line');
   const cliente = tabla(empresa, 'Customer');
   const vehiculo = tabla(empresa, 'Vehicle');
+  const vendedorTbl = tabla(empresa, 'Salesperson_Purchaser');
   const pool = await getPool();
   const result = await pool.request()
     .input('fechaInicio', sql.Date, new Date(`${fechaInicio}T12:00:00`))
@@ -495,6 +532,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
         v.[Model No_] AS catalogo,
         v.[Dealer Salesperson Code] AS vendedorVeh,
         h.[Salesperson Code] AS vendedorFactura,
+        LTRIM(RTRIM(ISNULL(sp.[Name], ''))) AS vendedorNombre,
         h.[Sell-to Customer Name] AS cliente,
         CASE
           WHEN v.[Purchase Receipt Date] > '19900101' THEN v.[Purchase Receipt Date]
@@ -504,6 +542,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
       FROM ${factura} l
       INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
       LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+      LEFT JOIN ${vendedorTbl} sp ON sp.[Code] = h.[Salesperson Code]
       LEFT JOIN ${vehiculo} v ON LTRIM(RTRIM(v.[VIN])) = LTRIM(RTRIM(l.[VIN]))
       WHERE l.[Posting Date] >= @fechaInicio
         AND l.[Posting Date] < DATEADD(day, 1, @fechaFin)
@@ -524,7 +563,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
         0 AS importe,
         0 AS costo,
         l.[Gen_ Prod_ Posting Group] AS grupo,
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
       FROM ${credito} l
       WHERE l.[Posting Date] >= @fechaInicio
         AND l.[Posting Date] < DATEADD(day, 1, @fechaFin)
@@ -589,7 +628,9 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
     const gastosImporte = dinero(gastosVin.reduce((s, item) => s + Number(item.importe || 0), 0));
     const utilidadNeta = utilidad == null ? null : dinero(utilidad - gastosImporte);
     const dias = diasEntre(row.fechaIngreso, row.fechaVenta);
-    const vendedor = String(row.vendedorFactura || row.vendedorVeh || '').trim() || null;
+    const vendedorCodigo = String(row.vendedorFactura || row.vendedorVeh || '').trim() || null;
+    const vendedorNombre = String(row.vendedorNombre || '').trim() || null;
+    const vendedor = vendedorNombre || vendedorCodigo;
     table.push({
       carline: carlineDe(row.grupo, row.marca),
       marca: marcaDe(row.grupo, row.marca),
@@ -616,7 +657,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
       notaCargoFolio,
       utilidadPromedio: utilidad,
       unidadesVendidas: 1,
-      vendedorId: vendedor,
+      vendedorId: vendedorCodigo,
       vendedor,
       cliente: String(row.cliente || '').replace(/\s+/g, ' ').trim() || null,
       formaPago: null,
@@ -690,7 +731,224 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
   };
 }
 
+/**
+ * Stock de nuevos que seguía en inventario antes del corte (día 1 del mes siguiente).
+ * El ingreso es la recepción (o la factura de compra) y la salida es la fecha de venta
+ * de la ficha. El mayor mezcla refacciones y reclasificaciones, así que no define el corte.
+ */
+async function getIncadeaInventarioAlCorte(corte) {
+  const empresa = empresaIncadea();
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const compra = tabla(empresa, 'Purch_ Invoice Line');
+  const compraHdr = tabla(empresa, 'Purch_ Invoice Header');
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('corte', sql.DateTime, corte)
+    .query(`
+      SELECT
+        v.[Model] AS modelo,
+        v.[Make Code] AS marca,
+        v.[Model No_] AS catalogo,
+        v.[Model Year] AS anio,
+        v.[VIN] AS vin,
+        v.[Location Code] AS ubicacion,
+        v.[Inventory Posting Group] AS grupo,
+        CASE
+          WHEN v.[Inventory Posting Group] LIKE 'VD%' THEN 'DEMO'
+          ELSE 'FIS'
+        END AS situacion,
+        ingreso.fecha AS fechaIngreso,
+        CASE
+          WHEN ISNULL(v.[Unit List Price], 0) > 0 THEN v.[Unit List Price]
+          WHEN ISNULL(v.[Unit Price], 0) > 0 THEN v.[Unit Price]
+          ELSE 0
+        END AS precio,
+        CASE
+          WHEN ISNULL(v.[Unit Cost], 0) > 0 THEN v.[Unit Cost]
+          WHEN ISNULL(v.[Last Direct Cost], 0) > 0 THEN v.[Last Direct Cost]
+          WHEN ISNULL(v.[Average Cost], 0) > 0 THEN v.[Average Cost]
+          ELSE 0
+        END AS costo,
+        ISNULL(compra.importe, 0) AS costoCompra
+      FROM ${vehiculo} v
+      OUTER APPLY (
+        SELECT TOP 1 pl.[Amount] AS importe
+        FROM ${compra} pl
+        INNER JOIN ${compraHdr} ph ON ph.[No_] = pl.[Document No_]
+        WHERE LTRIM(RTRIM(pl.[VIN])) = LTRIM(RTRIM(v.[VIN]))
+          AND pl.[Type] = 2
+          AND pl.[Quantity] > 0
+          AND ISNULL(pl.[Amount], 0) > 0
+          AND ph.[Posting Date] < @corte
+        ORDER BY ph.[Posting Date] DESC, pl.[Document No_] DESC
+      ) compra
+      CROSS APPLY (
+        SELECT CASE
+          WHEN v.[Purchase Receipt Date] > '19900101' THEN v.[Purchase Receipt Date]
+          WHEN v.[Purchase Invoice Date] > '19900101' THEN v.[Purchase Invoice Date]
+          ELSE NULL
+        END AS fecha
+      ) ingreso
+      WHERE ingreso.fecha IS NOT NULL
+        AND ingreso.fecha < @corte
+        AND (
+          v.[Date of Sale] IS NULL
+          OR v.[Date of Sale] <= '19900101'
+          OR v.[Date of Sale] >= @corte
+        )
+        AND (
+          v.[Inventory Posting Group] LIKE 'VN%'
+          OR v.[Inventory Posting Group] LIKE 'VD%'
+        )
+    `);
+
+  return (result.recordset || []).map((row) => {
+    const { costoNeto, baseBruta, precio } = costosIncadeaFila(row);
+    return {
+      VEH_TIPOAUTO: String(row.modelo || '').trim(),
+      UNC_FAMILIA: carlineDe(row.grupo, row.marca),
+      VEH_NOINVENTA: 1,
+      VEH_CATALOGO: String(row.catalogo || '').trim(),
+      VEH_ANMODELO: row.anio == null ? '' : String(row.anio).trim(),
+      VEH_NUMSERIE: String(row.vin || '').trim(),
+      VEH_NOMOTOR: '',
+      VEH_COLOEXTE: '',
+      COL_DESCRIPCION: '',
+      VEH_COLOINTE: '',
+      COLINTE: '',
+      VEH_OBSERVACION: String(row.grupo || '').trim(),
+      VEH_FECREMISION: row.fechaIngreso,
+      VEH_UBICACION: String(row.ubicacion || '').trim(),
+      VEH_SITUACION: row.situacion,
+      VEH_FECHSEP: '',
+      VEH_PERAPAR: '',
+      VEH_CVEUSU: '',
+      IMPORTE_REMISION: baseBruta,
+      GASTOS_REMISION: 0,
+      PREVIAS: 0,
+      PREVIAS_DETALLE: '',
+      PRECIO_LISTA: precio,
+      VEH_VENTA: precio,
+      VEH_COSTO1: costoNeto,
+      VEH_REBATE: 0,
+      VEH_MISELANEOS: 0,
+    };
+  });
+}
+
+/**
+ * Precio de referencia por versión: promedio sin IVA de facturas nuevas
+ * de los últimos 12 meses. No es el precio de lista de la unidad.
+ */
+async function loadIncadeaPrecioReferencia(hasta = new Date()) {
+  const empresa = empresaIncadea();
+  const factura = tabla(empresa, 'Sales Invoice Line');
+  const facturaHdr = tabla(empresa, 'Sales Invoice Header');
+  const cliente = tabla(empresa, 'Customer');
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const fin = hasta instanceof Date ? hasta : new Date();
+  const desde = new Date(fin.getTime());
+  desde.setMonth(desde.getMonth() - 12);
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('desde', sql.DateTime, desde)
+    .input('hasta', sql.DateTime, fin)
+    .query(`
+      SELECT
+        l.[Gen_ Prod_ Posting Group] AS grupo,
+        v.[Make Code] AS marca,
+        LTRIM(RTRIM(ISNULL(v.[Model], ''))) AS modelo,
+        LTRIM(RTRIM(ISNULL(v.[Model No_], ''))) AS catalogo,
+        COUNT(*) AS unidades,
+        SUM(l.[Amount]) AS subtotal
+      FROM ${factura} l
+      INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
+      LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+      INNER JOIN ${vehiculo} v ON LTRIM(RTRIM(v.[VIN])) = LTRIM(RTRIM(l.[VIN]))
+      WHERE l.[Posting Date] >= @desde
+        AND l.[Posting Date] < @hasta
+        AND l.[Type] = 2
+        AND l.[Item Type] = 2
+        AND l.[Quantity] > 0
+        AND ISNULL(l.[Amount], 0) > 0
+        AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
+        AND (
+          l.[Gen_ Prod_ Posting Group] LIKE 'VN%'
+          OR l.[Gen_ Prod_ Posting Group] LIKE 'VD%'
+        )
+        AND ISNULL(h.[Customer Group Code], '') <> 'ICC'
+        AND ISNULL(c.[Customer Posting Group], '') <> 'C-ICC'
+      GROUP BY
+        l.[Gen_ Prod_ Posting Group],
+        v.[Make Code],
+        LTRIM(RTRIM(ISNULL(v.[Model], ''))),
+        LTRIM(RTRIM(ISNULL(v.[Model No_], '')))
+    `);
+
+  return (result.recordset || []).map((row) => {
+    const unidades = Number(row.unidades) || 0;
+    const subtotal = unidades > 0 ? Number(row.subtotal) / unidades : 0;
+    return {
+      carline: carlineDe(row.grupo, row.marca),
+      version: String(row.modelo || '').trim(),
+      catalogo: String(row.catalogo || '').trim(),
+      unidadesVendidas: unidades,
+      subtotalPromedio: Math.round(subtotal * 100) / 100,
+      utilidadPromedio: 0,
+    };
+  }).filter((row) => row.carline && row.unidadesVendidas > 0 && row.subtotalPromedio > 0);
+}
+
+/** Ventas nuevas por carline (últimos 90 días) para cobertura del análisis. */
+async function loadIncadeaVentasCarline90(hasta = new Date()) {
+  const empresa = empresaIncadea();
+  const factura = tabla(empresa, 'Sales Invoice Line');
+  const facturaHdr = tabla(empresa, 'Sales Invoice Header');
+  const cliente = tabla(empresa, 'Customer');
+  const vehiculo = tabla(empresa, 'Vehicle');
+  const fin = hasta instanceof Date ? hasta : new Date();
+  const desde = new Date(fin.getTime());
+  desde.setDate(desde.getDate() - 90);
+  const pool = await getPool();
+  const result = await pool.request()
+    .input('desde', sql.DateTime, desde)
+    .input('hasta', sql.DateTime, fin)
+    .query(`
+      SELECT
+        l.[Gen_ Prod_ Posting Group] AS grupo,
+        v.[Make Code] AS marca,
+        COUNT(*) AS n
+      FROM ${factura} l
+      INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
+      LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+      INNER JOIN ${vehiculo} v ON LTRIM(RTRIM(v.[VIN])) = LTRIM(RTRIM(l.[VIN]))
+      WHERE l.[Posting Date] >= @desde
+        AND l.[Posting Date] < @hasta
+        AND l.[Type] = 2
+        AND l.[Item Type] = 2
+        AND l.[Quantity] > 0
+        AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
+        AND (
+          l.[Gen_ Prod_ Posting Group] LIKE 'VN%'
+          OR l.[Gen_ Prod_ Posting Group] LIKE 'VD%'
+        )
+        AND ISNULL(h.[Customer Group Code], '') <> 'ICC'
+        AND ISNULL(c.[Customer Posting Group], '') <> 'C-ICC'
+      GROUP BY l.[Gen_ Prod_ Posting Group], v.[Make Code]
+    `);
+
+  const map = new Map();
+  for (const row of result.recordset || []) {
+    const carline = carlineDe(row.grupo, row.marca);
+    map.set(carline, (map.get(carline) || 0) + Number(row.n || 0));
+  }
+  return [...map.entries()].map(([carline, n]) => ({ carline, n }));
+}
+
 module.exports = {
   getIncadeaInventarioNuevos,
+  getIncadeaInventarioAlCorte,
   getIncadeaCierreVendidos,
+  loadIncadeaPrecioReferencia,
+  loadIncadeaVentasCarline90,
 };

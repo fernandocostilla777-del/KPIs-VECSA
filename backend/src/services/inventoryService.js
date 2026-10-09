@@ -20,78 +20,77 @@ const SITUACION_LABELS = {
   TRAN: 'Tránsito',
 };
 const REAL_INVENTORY_SITUATIONS = new Set(['DIS', 'FIS', 'SEP']);
-const COSTO_PREVIA = 1669;
-const COSTO_PUBLICIDAD = 641.89;
-const COSTO_MERCADOTECNIA = COSTO_PUBLICIDAD;
-const CARGO_ENTREGA_CHICO = 240;
-const CARGO_ENTREGA_GRANDE = 315;
-const ENTREGA_MODELOS_CHICOS = ['AVEO', 'ONIX', 'TORNADO', 'GROOVE'];
-const GASOLINA_PRECIO_LITRO = 23.39;
-const GASOLINA_POR_MODELO = [
-  { key: 'CAPTIVA PHEV', litros: 15 },
-  { key: 'SILVERADO 2500', litros: 25 },
-  { key: 'EXPRESS VAN', litros: 20 },
-  { key: 'EXPRESS', litros: 20 },
-  { key: 'SUBURBAN', litros: 25 },
-  { key: 'SILVERADO', litros: 25 },
-  { key: 'CHEYENNE', litros: 25 },
-  { key: 'TAHOE', litros: 25 },
-  { key: 'TRAVERSE', litros: 20 },
-  { key: 'COLORADO', litros: 20 },
-  { key: 'BLAZER', litros: 20 },
-  { key: 'BLAIZER', litros: 20 },
-  { key: 'CAPTIVA', litros: 15 },
-  { key: 'TRACKER', litros: 15 },
-  { key: 'TRAX', litros: 15 },
-  { key: 'CAVALIER', litros: 13 },
-  { key: 'MONTANA', litros: 13 },
-  { key: 'TORNADO', litros: 13 },
-  { key: 'GROOVE', litros: 13 },
-  { key: 'AVEO', litros: 13 },
-  { key: 'S10', litros: 18 },
-  { key: 'S 10', litros: 18 },
-  { key: 'ONIX', litros: 10 },
-];
+const COSTOS_INVENTARIO_CERO = {
+  previa: 0,
+  publicidad: 0,
+  cargoEntregaChico: 0,
+  cargoEntregaGrande: 0,
+  gasolinaPrecioLitro: 0,
+  modelosChicos: [],
+  gasolinaPorModelo: [],
+};
+
+function costosInventario() {
+  try {
+    const { leerPrivado } = require('../incadea/privateStore');
+    const leido = leerPrivado('inventario-costos', { opcional: true, porDefecto: null });
+    const data = leido?.data || {};
+    return {
+      previa: Number(data.previa) || 0,
+      publicidad: Number(data.publicidad) || 0,
+      cargoEntregaChico: Number(data.cargoEntregaChico) || 0,
+      cargoEntregaGrande: Number(data.cargoEntregaGrande) || 0,
+      gasolinaPrecioLitro: Number(data.gasolinaPrecioLitro) || 0,
+      modelosChicos: Array.isArray(data.modelosChicos) ? data.modelosChicos : [],
+      gasolinaPorModelo: Array.isArray(data.gasolinaPorModelo) ? data.gasolinaPorModelo : [],
+    };
+  } catch {
+    return COSTOS_INVENTARIO_CERO;
+  }
+}
 
 function matchCargoEntrega(carline, version) {
+  const costos = costosInventario();
   const hay = normalizeMatchKey(`${carline || ''} ${version || ''}`)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/-/g, ' ');
-  const esChico = ENTREGA_MODELOS_CHICOS.some((key) => hay.includes(key));
-  return esChico ? CARGO_ENTREGA_CHICO : CARGO_ENTREGA_GRANDE;
+  const esChico = costos.modelosChicos.some((key) => hay.includes(String(key || '').toUpperCase()));
+  return esChico ? costos.cargoEntregaChico : costos.cargoEntregaGrande;
 }
 
 function buildGastosExtras(carline, version, gastosLibro = 0) {
+  const costos = costosInventario();
   const gasolina = matchGasolina(carline, version);
   const cargoEntrega = matchCargoEntrega(carline, version);
   const gastos = roundMoney(Math.abs(Number(gastosLibro) || 0)) || 0;
   return {
-    previa: COSTO_PREVIA,
-    publicidad: COSTO_PUBLICIDAD,
+    previa: costos.previa,
+    publicidad: costos.publicidad,
     cargoEntrega,
     gasolina,
     gastos,
-    total: roundMoney(COSTO_PREVIA + COSTO_PUBLICIDAD + cargoEntrega + gasolina.importe + gastos) || 0,
+    total: roundMoney(costos.previa + costos.publicidad + cargoEntrega + gasolina.importe + gastos) || 0,
   };
 }
 
 function matchGasolina(carline, version) {
+  const costos = costosInventario();
   const hay = normalizeMatchKey(`${carline || ''} ${version || ''}`)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/-/g, ' ');
-  const found = GASOLINA_POR_MODELO
+  const found = costos.gasolinaPorModelo
     .slice()
-    .sort((a, b) => b.key.length - a.key.length)
-    .find((row) => hay.includes(row.key));
+    .sort((a, b) => String(b.key || '').length - String(a.key || '').length)
+    .find((row) => hay.includes(String(row.key || '').toUpperCase()));
   if (!found) {
-    return { litros: 0, precioLitro: GASOLINA_PRECIO_LITRO, importe: 0 };
+    return { litros: 0, precioLitro: costos.gasolinaPrecioLitro, importe: 0 };
   }
   return {
-    litros: found.litros,
-    precioLitro: GASOLINA_PRECIO_LITRO,
-    importe: roundMoney(found.litros * GASOLINA_PRECIO_LITRO) || 0,
+    litros: Number(found.litros) || 0,
+    precioLitro: costos.gasolinaPrecioLitro,
+    importe: roundMoney((Number(found.litros) || 0) * costos.gasolinaPrecioLitro) || 0,
   };
 }
 
@@ -599,18 +598,23 @@ function buildAgeingSlowTable(units, utilidadRows = []) {
     const days = unit.daysInStock;
     const hist = matchUtilidadHistorica(lookups, carline, version, catalogo);
     const carlineHist = utilidadFromMap(lookups.byCarline, normalizeMatchKey(carline));
+    const referencia = hist?.subtotalPromedio ? hist : (carlineHist?.subtotalPromedio ? carlineHist : null);
     const planPiso = calcPlanPisoForPeriod(unit.importeRemision, unit.remisionDate, 'all');
     const generaInteres = days != null && days > PLAN_PISO_DIAS_GRACIA;
     const planPisoAcumulado = generaInteres ? (planPiso.intereses || 0) : 0;
     const costo = unitBaseCost(unit);
-    const precio = unit.precio || null;
+    const precioLista = Number(unit.precio) || 0;
+    const precio = precioLista || referencia?.subtotalPromedio || null;
+    const precioReferencia = !precioLista && referencia?.subtotalPromedio ? 'promedio' : null;
     const extras = buildGastosExtras(carline, version, unit.gastos);
     const costoPrevia = extras.previa;
     const costoMercadotecnia = extras.publicidad;
     const gasolina = extras.gasolina;
     const gastosAdicionales = extras.total;
-    const utilidadEsperada = hist?.utilidadPromedio
-      ?? (precio && costo ? roundMoney(precio - costo) : null);
+    const utilidadEsperada = (precioReferencia && precio && costo)
+      ? roundMoney(precio - costo)
+      : (hist?.utilidadPromedio
+        || (precio && costo ? roundMoney(precio - costo) : null));
     const utilidadNeta = utilidadEsperada == null
       ? null
       : roundMoney(utilidadEsperada - gastosAdicionales - (planPisoAcumulado || 0));
@@ -623,10 +627,11 @@ function buildAgeingSlowTable(units, utilidadRows = []) {
       vin: unit.serie || null,
       daysInStock: days,
       precio,
+      precioReferencia,
       costo,
       utilidadPromedio: utilidadEsperada,
       utilidadPctCarline: carlineHist?.utilidadPct ?? null,
-      unidadesVendidas: hist?.unidadesVendidas || 0,
+      unidadesVendidas: referencia?.unidadesVendidas || hist?.unidadesVendidas || 0,
       costoPrevia,
       costoMercadotecnia,
       costoPublicidad: extras.publicidad,
@@ -742,9 +747,9 @@ function buildCoberturaCarline(table, ventasRows) {
   };
 }
 
-async function loadVentasCarline90() {
+async function loadVentasCarline90(hasta = new Date()) {
   try {
-    return await query(`
+    const rows = await query(`
       SELECT
         LTRIM(RTRIM(ISNULL(NULLIF(cat.UNC_FAMILIA, ''), 'Sin familia'))) AS carline,
         COUNT(*) AS n
@@ -760,8 +765,15 @@ async function loadVentasCarline90() {
         AND CONVERT(date, v.VTE_FECHDOCTO, 103) >= DATEADD(day, -90, CAST(GETDATE() AS date))
       GROUP BY LTRIM(RTRIM(ISNULL(NULLIF(cat.UNC_FAMILIA, ''), 'Sin familia')))
     `);
+    if (Array.isArray(rows) && rows.length > 0) return rows;
   } catch (err) {
-    console.error('[inventory] ventas 90 días por carline:', err.message);
+    console.warn('[inventory] ventas 90 días por carline (DMS):', err.message);
+  }
+  try {
+    const { loadIncadeaVentasCarline90 } = require('./incadeaInventario');
+    return await loadIncadeaVentasCarline90(hasta);
+  } catch (incErr) {
+    console.error('[inventory] ventas 90 días por carline:', incErr.message);
     return [];
   }
 }
@@ -1235,8 +1247,69 @@ function enrichUnitsWithPruebasManejo(units) {
   });
 }
 
-async function getInventory({ planPisoPeriod = 'all' } = {}) {
-  const cacheKey = String(planPisoPeriod || 'all');
+function corteDeMes(mes) {
+  if (!/^\d{4}-\d{2}$/.test(String(mes || ''))) return null;
+  const year = Number(mes.slice(0, 4));
+  const month = Number(mes.slice(5, 7));
+  if (!year || month < 1 || month > 12) return null;
+  return new Date(year, month, 1, 12, 0, 0);
+}
+
+function isoDiaLocal(fecha) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, '0');
+  const d = String(fecha.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function especialesInventario() {
+  try {
+    const { leerPrivado } = require('../incadea/privateStore');
+    const leido = leerPrivado('unidades-especiales', { opcional: true, porDefecto: {} });
+    const data = leido?.data || {};
+    const tipos = new Map();
+    const listas = [
+      ['loaner', 'Loaner'],
+      ['topManagement', 'Top'],
+      ['tactic', 'Tactic'],
+      ['empleado', 'Empleado'],
+      ['flotilla', 'Flotilla'],
+      ['demo', 'Demo'],
+    ];
+    for (const [clave, etiqueta] of listas) {
+      for (const vin of data[clave] || []) {
+        tipos.set(String(vin || '').trim().toUpperCase(), etiqueta);
+      }
+    }
+    if (data.vins && typeof data.vins === 'object' && !Array.isArray(data.vins)) {
+      for (const [vin, info] of Object.entries(data.vins)) {
+        tipos.set(String(vin || '').trim().toUpperCase(), String(info?.tipo || 'Especial'));
+      }
+    }
+    const bloqueos = new Set(
+      (data.bloqueoSuministro || []).map((vin) => String(vin || '').trim().toUpperCase()).filter(Boolean),
+    );
+    return { tipos, bloqueos, datosEjemplo: Boolean(leido?.datosEjemplo) };
+  } catch {
+    return { tipos: new Map(), bloqueos: new Set(), datosEjemplo: true };
+  }
+}
+
+function resumirAntiguedad120(units, bloqueos) {
+  const universo = (units || []).filter((u) => u.daysInStock != null);
+  const antiguos = universo.filter((u) => u.daysInStock >= 120);
+  const bloqueo = antiguos.filter((u) => bloqueos.has(String(u.serie || '').trim().toUpperCase())).length;
+  const total = universo.length;
+  const pct = total > 0 ? Math.floor(((antiguos.length - bloqueo) / total) * 100) : 0;
+  return { total, antiguos: antiguos.length, antiguosBloqueo: bloqueo, pct };
+}
+
+async function getInventory({ planPisoPeriod = 'all', mes = '' } = {}) {
+  const corte = corteDeMes(mes);
+  const hoy = new Date();
+  hoy.setHours(12, 0, 0, 0);
+  const cortePasado = Boolean(corte && corte.getTime() <= hoy.getTime());
+  const cacheKey = `${String(planPisoPeriod || 'all')}|${cortePasado ? isoDiaLocal(corte) : 'foto'}`;
   const now = Date.now();
   if (
     inventoryCache.payload
@@ -1247,6 +1320,10 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
   }
 
   let rows;
+  if (cortePasado) {
+    const { getIncadeaInventarioAlCorte } = require('./incadeaInventario');
+    rows = await getIncadeaInventarioAlCorte(corte);
+  } else {
   try {
     rows = await query(`
     SELECT
@@ -1328,11 +1405,37 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
     const { getIncadeaInventarioNuevos } = require('./incadeaInventario');
     rows = await getIncadeaInventarioNuevos();
   }
+  }
 
   const units = enrichUnitsWithPruebasManejo(rows.map(mapRow));
+  if (cortePasado) {
+    const limite = startOfDay(corte);
+    for (const unit of units) {
+      if (!unit.remisionDate) continue;
+      unit.daysInStock = Math.max(0, Math.round((limite - startOfDay(unit.remisionDate)) / 86400000));
+    }
+  }
+  const especiales = especialesInventario();
+  for (const unit of units) {
+    const tipo = especiales.tipos.get(String(unit.serie || '').trim().toUpperCase());
+    if (!tipo) continue;
+    unit.tipoEspecial = tipo;
+    unit.situacionLabel = `${unit.situacionLabel} · ${tipo}`;
+  }
+  const ageing120 = resumirAntiguedad120(units, especiales.bloqueos);
   const previasMap = await loadPreviasBySeries(units.map((u) => u.serie));
   applyPreviasToUnits(units, previasMap);
-  const utilidadHistorica = await loadUtilidadHistoricaPorVersion();
+  let utilidadHistorica = await loadUtilidadHistoricaPorVersion();
+  const cruceHistorico = buildUtilidadLookups(utilidadHistorica);
+  const hayCruce = units.some((unit) => (
+    REAL_INVENTORY_SITUATIONS.has(unit.situacion)
+    && matchUtilidadHistorica(cruceHistorico, unit.familia, unit.tipoAuto, unit.catalogo)
+  ));
+  if (!hayCruce) {
+    const { loadIncadeaPrecioReferencia } = require('./incadeaInventario');
+    const hasta = cortePasado ? corte : new Date();
+    utilidadHistorica = await loadIncadeaPrecioReferencia(hasta);
+  }
   const availableSituations = new Set(['DIS', 'FIS', 'SEP']);
   const available = units.filter((u) => availableSituations.has(u.situacion));
   const demos = units.filter((u) => u.situacion === 'DEMO');
@@ -1420,7 +1523,10 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
     : 0;
   const demosConPruebas = demos.filter((u) => Number(u.pruebasManejo || 0) > 0).length;
   const demosPruebasTotal = demos.reduce((s, u) => s + (Number(u.pruebasManejo) || 0), 0);
-  const inventarioLectura = buildInventarioLectura(ageingSlowTable, await loadVentasCarline90());
+  const inventarioLectura = buildInventarioLectura(
+    ageingSlowTable,
+    await loadVentasCarline90(cortePasado ? corte : new Date()),
+  );
 
   const payload = {
     summary: {
@@ -1436,6 +1542,9 @@ async function getInventory({ planPisoPeriod = 'all' } = {}) {
       urgentAlerts: ageingAlerts.filter((a) => a.critical).length,
       ageingAlertsCount: ageingAlerts.length,
       ageingAlertsPlanPisoTotal: Math.round(ageingAlertsPlanPisoTotal * 100) / 100,
+      ageing120,
+      corteInventario: corte ? isoDiaLocal(corte) : null,
+      corteEsFotoActual: !cortePasado,
       bySituacion,
       sinPrevias,
       conPrevias,

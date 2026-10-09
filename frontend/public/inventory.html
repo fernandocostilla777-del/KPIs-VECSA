@@ -6,7 +6,7 @@
 <title>Inventario | VECSA BMW</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="/css/dashboard.css?v=173" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=174" rel="stylesheet"/>
 <script src="/js/theme.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -72,6 +72,14 @@
 
 <div id="panelInventarioAutos">
 
+<div class="table-header-row" style="margin-bottom:12px;align-items:flex-end">
+<label class="filter-field" style="margin:0">
+<span class="filter-label">Mes evaluado</span>
+<input id="invMesEvaluado" type="month" class="filter-input" style="min-width:160px"/>
+</label>
+<p id="invMesCorte" class="section-subtitle" style="margin:0">El corte es el día 1 del mes siguiente.</p>
+</div>
+
 <div id="autosKpiGrid">
 <section class="inv-grupo">
 <p class="inv-kpi-label">Stock</p>
@@ -128,16 +136,22 @@
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 <div class="kpi-accent"></div>
 </button>
-<button type="button" class="kpi-card kpi-card--rose kpi-card--interactive" id="kpiAgeingAlerts" data-autos-kpi="ageing" aria-expanded="false" title="C-3 · Unidades FIS 60+ y % sobre disponibles">
+<button type="button" class="kpi-card kpi-card--rose kpi-card--interactive" id="kpiAgeingAlerts" data-autos-kpi="ageing" aria-expanded="false" title="Unidades con 120 días o más sobre el stock total">
 <div class="kpi-card-head">
-  <span class="kpi-title">Antigüedad <span class="kpi-cmi-badge">C-3</span></span>
+  <span class="kpi-title">Antigüedad ≥120 <span class="kpi-cmi-badge">C-3</span></span>
   <span class="material-symbols-outlined kpi-icon">warning</span>
 </div>
 <div id="sAlerts" class="kpi-value">—</div>
-<p id="sAlertsSub" class="kpi-subtitle">Físico 60+ · % del disponible</p>
+<p id="sAlertsSub" class="kpi-subtitle">Unidades de 120 días o más</p>
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 <div class="kpi-accent"></div>
 </button>
+<div class="kpi-card kpi-card--slate" id="kpiGestionInventario">
+<div class="kpi-card-head"><span class="kpi-title">Gestión de inventario</span><span class="material-symbols-outlined kpi-icon">verified</span></div>
+<div id="sGestionInv" class="kpi-value">—</div>
+<p id="sGestionInvSub" class="kpi-subtitle">Bono · antigüedad y patio VDC</p>
+<div class="kpi-accent"></div>
+</div>
 <div class="kpi-card-anchor" id="kpiPlanPisoWrap">
 <button type="button" class="kpi-card kpi-card--amber kpi-card--interactive" id="kpiPlanPisoCard" aria-haspopup="listbox" aria-expanded="false" aria-controls="planPisoKpiMenu" title="Clic para elegir periodo acumulado">
 <div class="kpi-card-head"><span class="kpi-title">Plan Piso</span><span class="material-symbols-outlined kpi-icon">payments</span></div>
@@ -223,7 +237,7 @@ Unidad
 </button>
 </div>
 </div>
-<div class="vendidos-pago-filter" id="ageingVista" role="group" aria-label="Vista del análisis">
+<div class="vendidos-pago-filter" id="ageingVistaToggle" role="group" aria-label="Vista del análisis">
 <button type="button" class="vendidos-pago-filter__btn is-active" data-ageing-vista="tabla" aria-pressed="true">Tabla</button>
 <button type="button" class="vendidos-pago-filter__btn" data-ageing-vista="cobertura" aria-pressed="false">Cobertura</button>
 </div>
@@ -237,7 +251,9 @@ Unidad
 </label>
 <span id="ageingSearchMeta" class="kpi-detail-search-meta hidden"></span>
 </div>
-<div class="ageing-vista-cobertura hidden" id="ageingVistaCobertura" aria-label="Cobertura como vista principal"></div>
+<div class="ageing-vista-cobertura hidden" id="ageingVistaCobertura" aria-label="Cobertura como vista principal">
+<p class="inv-lectura__aviso hidden" id="ageingVistaCoberturaAviso"></p>
+</div>
 <div class="table-scroll ageing-slow-table-wrap" id="ageingTablaWrap">
 <table class="data-table ageing-slow-table">
 <colgroup>
@@ -367,7 +383,7 @@ Unidad
 </div>
 </section>
 
-<section class="section-panel dashboard-section" id="secIntercambiosHistorico" aria-label="Intercambios de planta">
+<section class="section-panel dashboard-section hidden" id="secIntercambiosHistorico" aria-label="Intercambios de planta">
 <div class="table-header-row" style="flex-wrap:wrap;gap:12px;align-items:flex-end">
 <div>
 <h3 class="section-title" style="margin-bottom:4px">Intercambios de planta</h3>
@@ -1110,6 +1126,6 @@ Unidad
 <script src="/js/kpi-insights.js?v=13"></script>
 <script src="/js/assistant-bubble.js?v=6"></script>
 <script src="/js/analisisComercial.js?v=20"></script>
-<script src="/js/inventory.js?v=110"></script>
+<script src="/js/inventory.js?v=112"></script>
 </body>
 </html>

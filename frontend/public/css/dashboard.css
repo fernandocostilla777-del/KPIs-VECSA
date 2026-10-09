@@ -2053,6 +2053,33 @@ button.ops-orders-drawer__item:hover {
   -webkit-backdrop-filter: none;
 }
 
+.ops-orders-drawer__asesor {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.06));
+  border: 1px solid rgba(37, 99, 235, 0.22);
+}
+
+.ops-orders-drawer__asesor-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.ops-orders-drawer__asesor strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
 .ops-orders-drawer__msg {
   margin: 0 0 7px;
   font-size: 12px;
@@ -7962,6 +7989,12 @@ body[data-page="contabilidad"] #scopeLabel {
   margin-bottom: 28px;
 }
 
+@media (min-width: 1180px) {
+  .goal-charts-section.chart-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .kpi-track .goal-chart-panel {
   margin: 0;
 }
@@ -8102,6 +8135,7 @@ body[data-page="contabilidad"] #scopeLabel {
 }
 
 .goal-chart-panel--retail .goal-chart-ring,
+.goal-chart-panel--mini .goal-chart-ring,
 .goal-chart-panel--sofia .goal-chart-ring {
   box-shadow:
     inset 5px 5px 12px rgba(163, 177, 198, 0.42),
@@ -8467,13 +8501,31 @@ body[data-page="contabilidad"] #scopeLabel {
   color: #27AE60;
 }
 
+.goal-chart-panel--mini .goal-chart-pct {
+  color: #64748B;
+}
+
 .goal-chart-panel--sofia .goal-chart-pct {
   color: #E056FD;
 }
 
 .goal-chart-panel--complete.goal-chart-panel--retail .goal-chart-pct,
+.goal-chart-panel--complete.goal-chart-panel--mini .goal-chart-pct,
 .goal-chart-panel--complete.goal-chart-panel--sofia .goal-chart-pct {
   color: #27AE60;
+}
+
+.goal-chart-panel--complete.goal-chart-panel--sofia .goal-chart-pct {
+  color: #E056FD;
+}
+
+.goal-chart-panel--mini .goal-input-shell:focus-within {
+  border-color: rgba(100, 116, 139, 0.55);
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.18);
+}
+
+.goal-chart-panel--mini .goal-input-unit {
+  color: #64748B;
 }
 
 /* ?? Filters ?? */
@@ -19345,6 +19397,28 @@ html[data-theme="dark"] .ppto-empresa__table tr.ppto-12m__grupo td {
   cursor: pointer;
 }
 .vendidos-filter-clear:hover { color: #0f172a; }
+.vendidos-pago-filter {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.vendidos-pago-filter__btn {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  cursor: pointer;
+}
+.vendidos-pago-filter__btn.is-active {
+  background: #0f172a;
+  color: #fff;
+}
 @media (max-width: 900px) {
   .vendidos-toolbar { flex-wrap: wrap; }
   .vendidos-unit-filter { flex: 1 1 100%; }

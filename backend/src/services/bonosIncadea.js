@@ -205,8 +205,82 @@ async function getResumenIncadea(trimestreRaw, { queryFn = db.consultar, hoy, in
   };
 }
 
+function patioDelMes(captura, mesNum) {
+  const trimestres = captura?.trimestres || {};
+  for (const bloque of Object.values(trimestres)) {
+    const lista = bloque?.calidad?.inventarios || [];
+    const hit = lista.find((row) => Number(row.mes) === mesNum && row.patioVdc != null);
+    if (hit) return Number(hit.patioVdc);
+  }
+  return null;
+}
+
+function objetivoDelMes(objetivos, mesNum) {
+  const trimestres = objetivos?.trimestres || {};
+  for (const bloque of Object.values(trimestres)) {
+    const meses = bloque?.meses || [];
+    if (meses.some((row) => Number(row.mes) === mesNum) && bloque?.inventario?.objetivoAntiguedad != null) {
+      return Number(bloque.inventario.objetivoAntiguedad);
+    }
+  }
+  return null;
+}
+
+async function getGestionInventario({ mes } = {}) {
+  const { getInventory } = require('./inventoryService');
+  const inv = await getInventory({ mes: mes || '' });
+  const a = inv.summary?.ageing120 || { total: 0, antiguos: 0, antiguosBloqueo: 0, pct: 0 };
+  const config = leerPrivado('bonos-2026', { opcional: true, porDefecto: {} });
+  const captura = leerPrivado('bonos-captura-2026', { opcional: true, porDefecto: {} });
+  const objetivos = leerPrivado('bonos-objetivos-2026', { opcional: true, porDefecto: {} });
+  const datosEjemplo = Boolean(config.datosEjemplo || captura.datosEjemplo || objetivos.datosEjemplo);
+  const invCfg = config.data?.calidad?.inventarios || {};
+  const mesNum = Number(String(mes || '').slice(5, 7)) || (new Date().getMonth() + 1);
+  const pct = engine.pctAntiguedadAlta({
+    unidades: a.total,
+    antiguedadAlta: a.antiguos,
+    bloqueoSuministro: a.antiguosBloqueo,
+  });
+  const patioVdc = captura.datosEjemplo ? null : patioDelMes(captura.data, mesNum);
+  const umbral = Number(invCfg.umbralAntiguedad);
+  const evaluacion = (!datosEjemplo && patioVdc != null && Number.isFinite(umbral))
+    ? engine.mesCumpleInventario(
+      {
+        mes: mesNum,
+        unidades: a.total,
+        antiguedadAlta: a.antiguos,
+        bloqueoSuministro: a.antiguosBloqueo,
+        patioVdc,
+      },
+      {
+        umbralAntiguedad: umbral,
+        mesInicioVdc: invCfg.mesInicioVdc,
+        unidadesVdcMinimas: invCfg.unidadesVdcMinimas,
+      },
+    )
+    : null;
+
+  return {
+    mes: mes || null,
+    corte: inv.summary?.corteInventario || null,
+    corteEsFotoActual: Boolean(inv.summary?.corteEsFotoActual),
+    pct,
+    pctEntero: a.pct,
+    total: a.total,
+    antiguos: a.antiguos,
+    bloqueo: a.antiguosBloqueo,
+    objetivoEtiqueta: objetivoDelMes(objetivos.data, mesNum),
+    objetivoPlantilla: Boolean(objetivos.datosEjemplo),
+    patioVdc,
+    patioEtiqueta: patioVdc == null ? 'sin captura' : String(patioVdc),
+    cumple: evaluacion ? evaluacion.cumple : null,
+    datosEjemplo,
+  };
+}
+
 module.exports = {
   getEstado,
   getValidacionEstatus,
   getResumenIncadea,
+  getGestionInventario,
 };

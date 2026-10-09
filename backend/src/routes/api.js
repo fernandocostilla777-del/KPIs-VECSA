@@ -75,7 +75,7 @@ router.put('/ventas/objetivos', requireSession, (req, res) => {
         error: 'Solo Administración puede modificar los objetivos de Avance Facturas GMMX y Entregas SOFIA.',
       });
     }
-    const { fechaInicio, fechaFin, retail, sofia } = req.body || {};
+    const { fechaInicio, fechaFin, retail, mini, sofia } = req.body || {};
     if (!fechaInicio || !fechaFin) {
       return res.status(400).json({ error: 'fechaInicio y fechaFin son requeridos.' });
     }
@@ -83,6 +83,7 @@ router.put('/ventas/objetivos', requireSession, (req, res) => {
       fechaInicio,
       fechaFin,
       retail,
+      mini,
       sofia,
       updatedBy: req.session?.username || null,
     }));
@@ -417,7 +418,10 @@ router.get('/lista-precios/images/:modelo', (req, res) => {
 
 router.get('/inventory', async (req, res, next) => {
   try {
-    res.json(await getInventory({ planPisoPeriod: req.query.planPisoPeriod || 'all' }));
+    res.json(await getInventory({
+      planPisoPeriod: req.query.planPisoPeriod || 'all',
+      mes: req.query.mes || '',
+    }));
   } catch (err) {
     next(err);
   }

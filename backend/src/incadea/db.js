@@ -77,4 +77,5 @@ module.exports = {
   configurado,
   esSoloLectura,
   consultar,
+  obtenerPool,
 };
