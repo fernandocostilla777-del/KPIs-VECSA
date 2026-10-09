@@ -35,16 +35,27 @@
     return { label: 'Revisar (>25%)', className: 'badge-alert' };
   }
 
+  function setSidebarStatus(text, type = '') {
+    const status = document.getElementById('statusBadge');
+    if (!status) return;
+    status.textContent = text;
+    status.className = 'sidebar-status-line';
+    if (type === 'loading') status.classList.add('status-loading');
+    else if (type === 'error') status.classList.add('status-error');
+  }
+
   async function loadForecast() {
     const horizon = document.getElementById('horizonSelect').value || '6';
-    const status = document.getElementById('statusBadge');
-    status.textContent = 'Consultando...';
-    status.className = 'sidebar-status-line status-loading';
+    setSidebarStatus('Consultando...', 'loading');
     showLoading(true);
 
     try {
       const data = await api(`/forecast?horizon=${horizon}`);
-      const k = data.kpis;
+      const k = data.kpis || {};
+      const metrics = data.metrics || {};
+      const historyRows = Array.isArray(data.history) ? data.history : [];
+      const forecastRows = Array.isArray(data.forecast) ? data.forecast : [];
+      const breakdown = data.breakdown || { byTipo: [], byModelo: [] };
 
       setText('kpiLast', fmt.number(k.lastMonthUnits));
       setText('kpiLastLabel', k.lastMonthLabel || 'Unidades vendidas');
@@ -68,9 +79,12 @@
         setText('kpiLastLabel', `${k.lastMonthLabel} · excluye ${k.incompleteMonth}`);
       }
       setText('lastUpdated', `Actualizado: ${new Date().toLocaleTimeString('es-MX')}`);
-      setText('dataSource', data.dataSource === 'sql'
-        ? 'Datos operativos (SQL) · ventas facturadas'
-        : (data.dataSource || '—'));
+      const fuenteLabel = {
+        incadea: 'Incadea · ventas retail facturadas (BMW / MINI / Motorrad)',
+        sql: 'SQL legacy (ADE_VTAFI) · ventas facturadas',
+        spreadsheet: 'Hoja histórica · forecast-source.csv',
+      };
+      setText('dataSource', fuenteLabel[data.dataSource] || data.dataSource || '—');
 
       if (window.KpiInsights?.apply) {
         window.KpiInsights.apply('forecast', {
@@ -88,20 +102,30 @@
         });
       }
 
-      document.getElementById('forecastTable').innerHTML = data.forecast.map((r) => `
+      const tableEl = document.getElementById('forecastTable');
+      if (tableEl) {
+        tableEl.innerHTML = forecastRows.length
+          ? forecastRows.map((r) => `
         <tr>
           <td><strong>${r.label}</strong></td>
           <td>${fmt.number(r.units)}</td>
           <td style="color:#64748b">${fmt.number(r.low)}</td>
           <td style="color:#64748b">${fmt.number(r.high)}</td>
         </tr>
-      `).join('');
+      `).join('')
+          : '<tr><td colspan="4">Sin pronóstico para este horizonte.</td></tr>';
+      }
 
-      document.getElementById('notesList').innerHTML = (data.notes || [])
-        .map((n) => `<li>${n}</li>`)
-        .join('');
+      const notesEl = document.getElementById('notesList');
+      if (notesEl) {
+        notesEl.innerHTML = (data.notes || [])
+          .map((n) => `<li>${n}</li>`)
+          .join('') || '<li>Sin notas adicionales.</li>';
+      }
 
-      document.getElementById('mappingTable').innerHTML = data.fieldMapping.map((f) => `
+      const mappingEl = document.getElementById('mappingTable');
+      if (mappingEl) {
+        mappingEl.innerHTML = (data.fieldMapping || []).map((f) => `
         <tr>
           <td>${f.sheet}</td>
           <td style="color:#64748b">${f.sql}</td>
@@ -109,27 +133,28 @@
           <td>${f.usedInModel ? '<span class="badge-tipo badge-running">Sí</span>' : '<span class="badge-tipo badge-stable">No</span>'}</td>
         </tr>
       `).join('');
+      }
 
       // Chart: un solo año de histórico (últimos 12 meses) + horizonte de pronóstico
-      const chartHistory = data.history.slice(-12);
+      const chartHistory = historyRows.slice(-12);
       const histLabels = chartHistory.map((r) => r.label);
       const histUnits = chartHistory.map((r) => r.units);
       const fitted = chartHistory.map((r) => r.fitted);
-      const forecastLabels = data.forecast.map((r) => r.label);
+      const forecastLabels = forecastRows.map((r) => r.label);
       const allLabels = [...histLabels, ...forecastLabels];
 
-      const histSeries = [...histUnits, ...data.forecast.map(() => null)];
+      const histSeries = [...histUnits, ...forecastRows.map(() => null)];
       const forecastSeries = [
         ...histUnits.map((_, i) => (i === histUnits.length - 1 ? histUnits[i] : null)),
-        ...data.forecast.map((r) => r.units),
+        ...forecastRows.map((r) => r.units),
       ];
       const lowSeries = [
         ...histUnits.map(() => null),
-        ...data.forecast.map((r) => r.low),
+        ...forecastRows.map((r) => r.low),
       ];
       const highSeries = [
         ...histUnits.map(() => null),
-        ...data.forecast.map((r) => r.high),
+        ...forecastRows.map((r) => r.high),
       ];
       const fittedSeries = [...fitted, ...data.forecast.map(() => null)];
 
@@ -140,8 +165,9 @@
         `${data.model?.name || 'Modelo de predicción'} · Histórico ${histFrom}${histFrom && histTo ? ' – ' : ''}${histTo} (12 meses)`
       );
 
+      const chartCanvas = document.getElementById('forecastChart');
       destroyChart(forecastChart);
-      forecastChart = new Chart(document.getElementById('forecastChart'), {
+      if (chartCanvas && allLabels.length) forecastChart = new Chart(chartCanvas, {
         type: 'line',
         data: {
           labels: allLabels,
@@ -205,45 +231,56 @@
         options: chartOptions({ plugins: { legend: { position: 'bottom' } } }),
       });
 
+      const byTipo = Array.isArray(breakdown.byTipo) ? breakdown.byTipo : [];
+      const byModelo = Array.isArray(breakdown.byModelo) ? breakdown.byModelo : [];
+
       destroyChart(tipoChart);
-      tipoChart = new Chart(document.getElementById('tipoChart'), {
-        type: 'doughnut',
-        data: {
-          labels: data.breakdown.byTipo.map((r) => r.label),
-          datasets: [{
-            data: data.breakdown.byTipo.map((r) => r.units),
-            backgroundColor: chartPalette,
-            borderWidth: 0,
-          }],
-        },
-        options: chartOptions({ plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }),
-      });
+      const tipoCanvas = document.getElementById('tipoChart');
+      if (tipoCanvas && byTipo.length) {
+        tipoChart = new Chart(tipoCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: byTipo.map((r) => r.label),
+            datasets: [{
+              data: byTipo.map((r) => r.units),
+              backgroundColor: chartPalette,
+              borderWidth: 0,
+            }],
+          },
+          options: chartOptions({ plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }),
+        });
+      }
 
       destroyChart(modeloChart);
-      modeloChart = new Chart(document.getElementById('modeloChart'), {
-        type: 'bar',
-        data: {
-          labels: data.breakdown.byModelo.map((r) => r.label),
-          datasets: [{
-            label: 'Unidades',
-            data: data.breakdown.byModelo.map((r) => r.units),
-            backgroundColor: chartColors.secondary,
-            borderRadius: 8,
-          }],
-        },
-        options: chartOptions({
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-        }),
-      });
+      const modeloCanvas = document.getElementById('modeloChart');
+      if (modeloCanvas && byModelo.length) {
+        modeloChart = new Chart(modeloCanvas, {
+          type: 'bar',
+          data: {
+            labels: byModelo.map((r) => r.label),
+            datasets: [{
+              label: 'Unidades',
+              data: byModelo.map((r) => r.units),
+              backgroundColor: chartColors.secondary,
+              borderRadius: 8,
+            }],
+          },
+          options: chartOptions({
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+          }),
+        });
+      }
 
-      status.textContent = data.dataSource === 'sql'
-        ? `Datos operativos · ${data.metrics.trainSize} meses de historia`
-        : `Fuente: ${data.dataSource} · ${data.metrics.trainSize} meses`;
-      status.className = 'sidebar-status-line';
+      const trainSize = metrics.trainSize ?? historyRows.length;
+      const fuenteStatus = {
+        incadea: `Incadea · ${trainSize} meses`,
+        sql: `SQL operativo · ${trainSize} meses`,
+        spreadsheet: `Hoja histórica · ${trainSize} meses`,
+      };
+      setSidebarStatus(fuenteStatus[data.dataSource] || `Fuente: ${data.dataSource || '—'} · ${trainSize} meses`);
     } catch (err) {
-      status.textContent = err.message;
-      status.className = 'sidebar-status-line status-error';
+      setSidebarStatus(err.message || 'Error al cargar pronóstico', 'error');
     } finally {
       showLoading(false);
     }

@@ -6,7 +6,7 @@
 <title>Inventario | VECSA BMW</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="/css/dashboard.css?v=174" rel="stylesheet"/>
+<link href="/css/dashboard.css?v=175" rel="stylesheet"/>
 <script src="/js/theme.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -72,22 +72,34 @@
 
 <div id="panelInventarioAutos">
 
-<div class="table-header-row" style="margin-bottom:12px;align-items:flex-end">
-<label class="filter-field" style="margin:0">
-<span class="filter-label">Mes evaluado</span>
-<input id="invMesEvaluado" type="month" class="filter-input" style="min-width:160px"/>
-</label>
-<p id="invMesCorte" class="section-subtitle" style="margin:0">El corte es el día 1 del mes siguiente.</p>
-</div>
-
 <div id="autosKpiGrid">
+<section class="inv-grupo inv-grupo--bono" aria-labelledby="invGrupoBonoLabel">
+<div class="inv-grupo__bono-head">
+<div>
+<p class="inv-kpi-label" id="invGrupoBonoLabel">Bono · Gestión de inventarios</p>
+<p id="invMesCorte" class="inv-grupo__bono-hint">El corte es el día 1 del mes siguiente.</p>
+</div>
+<label class="filter-field inv-grupo__bono-mes">
+<span class="filter-label">Mes evaluado</span>
+<input id="invMesEvaluado" type="month" class="filter-input"/>
+</label>
+</div>
+<div class="kpi-grid inv-kpi-cards inv-kpi-cards--bono">
+<div class="kpi-card kpi-card--slate" id="kpiGestionInventario">
+<div class="kpi-card-head"><span class="kpi-title">Gestión de inventario</span><span class="material-symbols-outlined kpi-icon">verified</span></div>
+<div id="sGestionInv" class="kpi-value">—</div>
+<p id="sGestionInvSub" class="kpi-subtitle">Bono · antigüedad y patio VDC</p>
+<div class="kpi-accent"></div>
+</div>
+</div>
+</section>
 <section class="inv-grupo">
 <p class="inv-kpi-label">Stock</p>
 <div class="kpi-grid inv-kpi-cards">
 <button type="button" class="kpi-card kpi-card--blue kpi-card--interactive" id="kpiTotalUnits" data-autos-kpi="total" aria-expanded="false" title="Clic para ver desglose">
 <div class="kpi-card-head"><span class="kpi-title">Unidades Totales</span><span class="material-symbols-outlined kpi-icon">directions_car</span></div>
 <div id="sTotal" class="kpi-value">—</div>
-<p class="kpi-subtitle">FIS, DIS, PED, PEN, SEP, DEMO, TRAN</p>
+<p class="kpi-subtitle">Stock en piso, tránsito y Demo</p>
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 <div class="kpi-accent"></div>
 </button>
@@ -146,12 +158,6 @@
 <span class="material-symbols-outlined kpi-card-chevron" aria-hidden="true">expand_more</span>
 <div class="kpi-accent"></div>
 </button>
-<div class="kpi-card kpi-card--slate" id="kpiGestionInventario">
-<div class="kpi-card-head"><span class="kpi-title">Gestión de inventario</span><span class="material-symbols-outlined kpi-icon">verified</span></div>
-<div id="sGestionInv" class="kpi-value">—</div>
-<p id="sGestionInvSub" class="kpi-subtitle">Bono · antigüedad y patio VDC</p>
-<div class="kpi-accent"></div>
-</div>
 <div class="kpi-card-anchor" id="kpiPlanPisoWrap">
 <button type="button" class="kpi-card kpi-card--amber kpi-card--interactive" id="kpiPlanPisoCard" aria-haspopup="listbox" aria-expanded="false" aria-controls="planPisoKpiMenu" title="Clic para elegir periodo acumulado">
 <div class="kpi-card-head"><span class="kpi-title">Plan Piso</span><span class="material-symbols-outlined kpi-icon">payments</span></div>
@@ -1121,7 +1127,7 @@ Unidad
 <script src="/js/auth-client.js"></script>
 <script src="/js/shared.js?v=8"></script>
 <script src="/js/sidebar.js?v=12"></script>
-<script src="/js/topbar.js?v=27"></script>
+<script src="/js/topbar.js?v=28"></script>
 <script src="/js/mobile-nav.js"></script>
 <script src="/js/kpi-insights.js?v=13"></script>
 <script src="/js/assistant-bubble.js?v=6"></script>

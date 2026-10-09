@@ -113,6 +113,39 @@ function monthLabel(yr, mo) {
   return `${names[mo - 1]} ${yr}`;
 }
 
+function forecastSeasonalFallback(trainSeries, horizon, incompleteMonth) {
+  const byMonth = Array.from({ length: 13 }, () => []);
+  trainSeries.forEach((r) => byMonth[r.mo].push(r.units));
+  const seasonal = byMonth.map((arr) => (arr.length ? mean(arr) : mean(trainSeries.map((r) => r.units))));
+  const overall = mean(trainSeries.map((r) => r.units));
+  let cursor = trainSeries[trainSeries.length - 1];
+  const forecast = [];
+  for (let h = 0; h < horizon; h++) {
+    cursor = nextMonth(cursor.yr, cursor.mo);
+    const pred = Math.max(0, Math.round(seasonal[cursor.mo] || overall));
+    forecast.push({
+      yr: cursor.yr,
+      mo: cursor.mo,
+      key: `${cursor.yr}-${String(cursor.mo).padStart(2, '0')}`,
+      label: monthLabel(cursor.yr, cursor.mo),
+      units: pred,
+      low: Math.max(0, Math.round(pred * 0.8)),
+      high: Math.round(pred * 1.2),
+    });
+  }
+  const lastComplete = trainSeries[trainSeries.length - 1];
+  return {
+    history: trainSeries,
+    incompleteMonth,
+    lastCompleteMonth: lastComplete
+      ? { yr: lastComplete.yr, mo: lastComplete.mo, units: lastComplete.units, label: monthLabel(lastComplete.yr, lastComplete.mo) }
+      : null,
+    forecast,
+    metrics: { mape: null, mae: null, rmse: null, r2: null, trainSize: trainSeries.length },
+    model: { name: 'Media estacional (fallback)', features: ['mes'], coefficients: [] },
+  };
+}
+
 /**
  * @param {Array<{yr:number, mo:number, units:number}>} history ordenado ASC
  * @param {number} horizon meses a pronosticar
@@ -149,37 +182,7 @@ function forecastSales(history, horizon = 6) {
 
   const minIndex = 12;
   if (trainSeries.length <= minIndex + 3) {
-    // Fallback: media estacional simple
-    const byMonth = Array.from({ length: 13 }, () => []);
-    trainSeries.forEach((r) => byMonth[r.mo].push(r.units));
-    const seasonal = byMonth.map((arr) => (arr.length ? mean(arr) : mean(trainSeries.map((r) => r.units))));
-    const overall = mean(trainSeries.map((r) => r.units));
-    let cursor = trainSeries[trainSeries.length - 1];
-    const forecast = [];
-    for (let h = 0; h < horizon; h++) {
-      cursor = nextMonth(cursor.yr, cursor.mo);
-      const pred = Math.max(0, Math.round(seasonal[cursor.mo] || overall));
-      forecast.push({
-        yr: cursor.yr,
-        mo: cursor.mo,
-        key: `${cursor.yr}-${String(cursor.mo).padStart(2, '0')}`,
-        label: monthLabel(cursor.yr, cursor.mo),
-        units: pred,
-        low: Math.max(0, Math.round(pred * 0.8)),
-        high: Math.round(pred * 1.2),
-      });
-    }
-    const lastComplete = trainSeries[trainSeries.length - 1];
-    return {
-      history: trainSeries,
-      incompleteMonth,
-      lastCompleteMonth: lastComplete
-        ? { yr: lastComplete.yr, mo: lastComplete.mo, units: lastComplete.units, label: monthLabel(lastComplete.yr, lastComplete.mo) }
-        : null,
-      forecast,
-      metrics: { mape: null, mae: null, rmse: null, r2: null, trainSize: trainSeries.length },
-      model: { name: 'Media estacional (fallback)', features: ['mes'], coefficients: [] },
-    };
+    return forecastSeasonalFallback(trainSeries, horizon, incompleteMonth);
   }
 
   const X = [];
@@ -199,7 +202,7 @@ function forecastSales(history, horizon = 6) {
   let beta = olsFit(Xtrain, ytrain);
   if (!beta) beta = olsFit(X, y);
   if (!beta) {
-    throw new Error('No se pudo ajustar el modelo de pronóstico.');
+    return forecastSeasonalFallback(trainSeries, horizon, incompleteMonth);
   }
 
   const predictRow = (features) => {

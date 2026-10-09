@@ -2,8 +2,8 @@
   if (document.body.dataset.page === 'assistant') return;
 
   const MESSAGES = [
-    '¿Cuántos Aveo se vendieron?',
-    'Pregúntame por modelos o KPIs',
+    '¿Cuántas unidades BMW se vendieron este mes?',
+    'Pregúntame por modelos BMW, MINI o Motorrad',
     'Consulto ventas, inventario y EEFF',
     'Abre el chat aquí ↓',
   ];
@@ -46,7 +46,7 @@
         </div>
         <form class="ai-chat-panel__composer" data-ai="form">
           <textarea data-ai="input" class="assistant-input ai-chat-panel__input" rows="1"
-            placeholder="Ej. ¿Cuántos Aveo se vendieron en el año?" maxlength="4000"></textarea>
+            placeholder="Ej. ¿Cuántas unidades BMW se vendieron en el trimestre?" maxlength="4000"></textarea>
           <button type="submit" data-ai="send" class="btn-glass btn-primary assistant-send" disabled>
             <span class="material-symbols-outlined">send</span>
           </button>

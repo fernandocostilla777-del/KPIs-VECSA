@@ -197,6 +197,9 @@ const SUMMARY_METRIC_ICONS = {
   asesores_activos: 'groups',
   alerta_margen: 'warning',
   retail_units: 'storefront',
+  bono_volumen: 'emoji_events',
+  gestion_inventarios: 'inventory',
+  linea_credito_bmw: 'account_balance',
   flotilla_units: 'local_shipping',
   inventario_disponible: 'inventory_2',
   sin_previas: 'build_circle',
@@ -228,6 +231,9 @@ const SUMMARY_METRIC_LINKS = {
   asesores_activos: '/sales.html',
   alerta_margen: '/sales.html',
   retail_units: '/sales.html',
+  bono_volumen: '/bonos.html',
+  gestion_inventarios: '/inventory.html',
+  linea_credito_bmw: '/inventory.html',
   flotilla_units: '/sales.html',
   inventario_disponible: '/inventory.html',
   sin_previas: '/inventory.html',
@@ -271,20 +277,26 @@ function resolveSummaryMetric(id, ctx) {
   const entregasSinPrevias = Number(ops.entregasSinPrevias ?? 0);
   const entregasSofia = Number(ops.entregasSofia ?? 0);
   const cierreUds = Number(cierre.unidades ?? 0);
+  const marcas = ctx.marcas || {};
+  const bonos = ctx.bonos || {};
+  const gestion = inventory?.gestion || {};
+  const esp = inventory?.especiales || {};
+  const espTotal = Number(esp.Demo || 0) + Number(esp.Loaner || 0) + Number(esp.Top || 0) + Number(esp.Tactic || 0);
 
   const map = {
     unidades: {
       value: fmt.number(unidades),
-      sub: `${fmt.number(retail)} retail · ${fmt.number(flotilla)} flotilla`,
-      progress: { pct: pctPart(retail, unidades), label: 'Participación retail' },
+      sub: `${fmt.number(marcas.bmw ?? 0)} BMW · ${fmt.number(marcas.mini ?? 0)} MINI · ${fmt.number(marcas.motorrad ?? 0)} Motorrad`,
+      progress: { pct: pctPart(marcas.bmw, unidades), label: 'Participación BMW' },
       details: [
         { label: 'Unidades totales', value: fmt.number(unidades) },
-        { label: 'Retail', value: `${fmt.number(retail)} · ${pctPart(retail, unidades)}%` },
-        { label: 'Flotilla', value: `${fmt.number(flotilla)} · ${pctPart(flotilla, unidades)}%` },
+        { label: 'BMW', value: `${fmt.number(marcas.bmw ?? 0)} · ${pctPart(marcas.bmw, unidades)}%` },
+        { label: 'MINI', value: `${fmt.number(marcas.mini ?? 0)} · ${pctPart(marcas.mini, unidades)}%` },
+        { label: 'Motorrad', value: `${fmt.number(marcas.motorrad ?? 0)} · ${pctPart(marcas.motorrad, unidades)}%` },
         { label: 'Ingreso de ventas', value: fmt.currency(sales?.revenue) },
         { label: 'Ticket promedio', value: fmt.currency(sales?.ticketPromedio) },
       ],
-      note: 'Unidades facturadas en el periodo, separadas por canal de venta.',
+      note: 'Unidades nuevas facturadas en el periodo, por marca BMW Group.',
     },
     utilidad_bruta: {
       value: fmt.currency(consolidated?.utilidadVentas),
@@ -362,15 +374,66 @@ function resolveSummaryMetric(id, ctx) {
       note: 'Asesores que venden mucho volumen sacrificando utilidad por unidad.',
     },
     retail_units: {
-      value: fmt.number(retail),
-      sub: 'unidades canal retail',
-      progress: { pct: pctPart(retail, unidades), label: 'Del total de unidades' },
+      value: fmt.number(marcas.total ?? retail),
+      sub: `BMW ${fmt.number(marcas.bmw ?? 0)} · MINI ${fmt.number(marcas.mini ?? 0)} · Motorrad ${fmt.number(marcas.motorrad ?? 0)}`,
+      progress: { pct: pctPart(marcas.total ?? retail, unidades), label: 'Del total de unidades' },
       details: [
-        { label: 'Retail', value: fmt.number(retail) },
-        { label: 'Flotilla', value: fmt.number(flotilla) },
-        { label: 'Total unidades', value: fmt.number(unidades) },
+        { label: 'BMW', value: fmt.number(marcas.bmw ?? 0) },
+        { label: 'MINI', value: fmt.number(marcas.mini ?? 0) },
+        { label: 'Motorrad', value: fmt.number(marcas.motorrad ?? 0) },
+        { label: 'Otras marcas', value: fmt.number(marcas.otras ?? 0) },
       ],
-      note: 'Ventas a cliente final (canal retail).',
+      note: 'Retail por marca desde Incadea (campos legacy conservados en API).',
+    },
+    bono_volumen: {
+      value: bonos.disponible
+        ? fmt.currency(bonos.bonoEstimado)
+        : '—',
+      sub: bonos.disponible
+        ? `${bonos.etiqueta || `T${bonos.trimestre}`} · alcance ${bonos.alcanceTrimestral != null ? `${Math.round(Number(bonos.alcanceTrimestral) * 1000) / 10}%` : '—'}`
+        : (bonos.motivo || 'Sin captura del trimestre'),
+      progress: {
+        pct: bonos.alcanceTrimestral != null ? clampPct(Number(bonos.alcanceTrimestral) * 100) : null,
+        label: 'Alcance trimestral',
+      },
+      details: bonos.disponible ? [
+        { label: 'Retail trimestre', value: fmt.number(bonos.retail) },
+        { label: 'Objetivo', value: fmt.number(bonos.objetivo) },
+        { label: 'Anticipos', value: fmt.currency(bonos.anticipos) },
+        { label: 'Estado', value: bonos.datosEjemplo ? 'Datos de ejemplo' : 'Captura activa' },
+      ] : [{ label: 'Motivo', value: bonos.motivo || 'No disponible' }],
+      note: 'Bono por volumen del trimestre en curso según captura y reglas 2026.',
+    },
+    gestion_inventarios: {
+      value: gestion.pctEntero != null ? `${gestion.pctEntero}%` : '—',
+      sub: gestion.objetivoEtiqueta
+        ? `Objetivo ${gestion.objetivoEtiqueta}${gestion.cumple === true ? ' · cumple' : gestion.cumple === false ? ' · no cumple' : ''}`
+        : 'Antigüedad 120+ días vs universo',
+      progress: {
+        pct: gestion.pctEntero != null ? clampPct(gestion.pctEntero) : null,
+        label: '% antigüedad alta',
+      },
+      details: [
+        { label: 'Unidades evaluadas', value: fmt.number(gestion.total) },
+        { label: 'Con 120+ días', value: fmt.number(gestion.antiguos) },
+        { label: 'Bloqueo suministro', value: fmt.number(gestion.bloqueo) },
+        { label: 'Patio VDC', value: gestion.patioEtiqueta || '—' },
+      ],
+      note: 'Indicador de calidad del Sistema de Bonos (Gestión de Inventarios).',
+    },
+    linea_credito_bmw: {
+      value: fmt.number(inventory?.lineaCreditoUnits ?? inventory?.ageingAlertsCount ?? 0),
+      sub: 'disponibles con más de 60 días',
+      progress: {
+        pct: pctPart(inventory?.lineaCreditoUnits, inventory?.availableUnits),
+        label: 'Sobre inventario disponible',
+      },
+      details: [
+        { label: 'Unidades >60 días', value: fmt.number(inventory?.lineaCreditoUnits ?? 0) },
+        { label: 'Disponibles', value: fmt.number(inventory?.availableUnits ?? 0) },
+        { label: 'Días promedio', value: `${inventory?.avgDaysInventory || 0} días` },
+      ],
+      note: 'Proxy operativo de exposición en línea BMW Financial Services (sin costo financiero aún).',
     },
     flotilla_units: {
       value: fmt.number(flotilla),
@@ -455,17 +518,16 @@ function resolveSummaryMetric(id, ctx) {
       note: 'Tiempo promedio que una unidad permanece en piso antes de venderse.',
     },
     demos: {
-      value: fmt.number(inventory?.demos),
-      sub: inventory?.avgDaysDemo
-        ? `${inventory.avgDaysDemo} días prom. · ${fmt.number(inventory?.demosPruebasTotal || 0)} pruebas`
-        : 'unidades demo en piso',
+      value: fmt.number(espTotal || inventory?.demos),
+      sub: `Demo ${fmt.number(esp.Demo || 0)} · Loaner ${fmt.number(esp.Loaner || 0)} · Top ${fmt.number(esp.Top || 0)} · Tactic ${fmt.number(esp.Tactic || 0)}`,
       details: [
-        { label: 'Demos', value: fmt.number(inventory?.demos) },
-        { label: 'Días promedio como demo', value: `${inventory?.avgDaysDemo || 0} días` },
-        { label: 'Con pruebas de manejo', value: fmt.number(inventory?.demosConPruebas || 0) },
-        { label: 'Pruebas totales', value: fmt.number(inventory?.demosPruebasTotal || 0) },
+        { label: 'Demo', value: fmt.number(esp.Demo || 0) },
+        { label: 'Loaner', value: fmt.number(esp.Loaner || 0) },
+        { label: 'Top Management', value: fmt.number(esp.Top || 0) },
+        { label: 'Tactic', value: fmt.number(esp.Tactic || 0) },
+        { label: 'Demos en piso (DEMO)', value: fmt.number(inventory?.demos || 0) },
       ],
-      note: 'Unidades en situación DEMO y su uso en pruebas de manejo.',
+      note: 'Unidades especiales registradas por VIN (lista privada VECSA).',
     },
     entregas_sin_previas: {
       value: fmt.number(entregasSinPrevias),
@@ -711,17 +773,22 @@ function summaryChartSpec(id, ctx) {
   const entregasSinPrevias = num(ops.entregasSinPrevias);
   const entregasSofia = num(ops.entregasSofia);
   const cierreUds = num(cierre.unidades);
+  const marcas = ctx.marcas || {};
+  const bonos = ctx.bonos || {};
+  const gestion = inventory?.gestion || {};
 
-  const canal = {
+  const marcaChart = {
     type: 'stacked100',
     family: 'composicion',
     unit: 'uds.',
-    labels: ['Canal'],
+    labels: ['Marca'],
     datasets: [
-      { label: 'Retail', values: [retail] },
-      { label: 'Flotilla', values: [flotilla] },
+      { label: 'BMW', values: [num(marcas.bmw)] },
+      { label: 'MINI', values: [num(marcas.mini)] },
+      { label: 'Motorrad', values: [num(marcas.motorrad)] },
     ],
   };
+  const canal = marcaChart;
   const taller = {
     type: 'stacked100',
     family: 'composicion',
@@ -765,8 +832,38 @@ function summaryChartSpec(id, ctx) {
           values: monthlyTrend.map((row) => num(row.units ?? row.count)),
         }
       : canal,
-    retail_units: canal,
-    flotilla_units: canal,
+    retail_units: marcaChart,
+    flotilla_units: marcaChart,
+    bono_volumen: Array.isArray(bonos.meses) && bonos.meses.length
+      ? {
+          type: 'barHorizontal',
+          family: 'comparar',
+          unit: '%',
+          labels: bonos.meses.map((m) => m.etiqueta || `Mes ${m.mes}`),
+          values: bonos.meses.map((m) => Math.round(num(m.alcance) * 1000) / 10),
+        }
+      : null,
+    gestion_inventarios: gestion.pctEntero != null
+      ? {
+          type: 'barTarget',
+          family: 'meta_vs_real',
+          unit: '%',
+          labels: ['Antigüedad 120+'],
+          values: [num(gestion.pctEntero)],
+          targets: [num(String(gestion.objetivoEtiqueta || '').replace(/[^\d.]/g, '')) || 10],
+          targetLabel: 'Objetivo',
+        }
+      : null,
+    linea_credito_bmw: {
+      type: 'stacked100',
+      family: 'composicion',
+      unit: 'uds.',
+      labels: ['Disponibles'],
+      datasets: [
+        { label: '>60 días', values: [num(inventory?.lineaCreditoUnits)] },
+        { label: '≤60 días', values: [Math.max(0, num(inventory?.availableUnits) - num(inventory?.lineaCreditoUnits))] },
+      ],
+    },
     utilidad_bruta: {
       type: 'stacked100',
       family: 'composicion',
@@ -1618,12 +1715,51 @@ function renderPersonalizedKpis(ctx) {
     </div>`;
 }
 
-function renderFinancialSummary(f, salesAnalytics, operaciones = {}, puntoEquilibrio = null) {
+function renderBrandStrip(marcas) {
+  const el = document.getElementById('brandStrip');
+  if (!el) return;
+  if (!marcas || !(marcas.total > 0 || marcas.bmw || marcas.mini || marcas.motorrad)) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  const { fmt } = Dashboard;
+  el.classList.remove('hidden');
+  el.innerHTML = [
+    ['bmw', 'BMW', marcas.bmw],
+    ['mini', 'MINI', marcas.mini],
+    ['motorrad', 'Motorrad', marcas.motorrad],
+  ].map(([key, label, qty]) => `
+    <article class="overview-brand-card overview-brand-card--${key}">
+      <p class="overview-brand-card__label">${escHtml(label)}</p>
+      <p class="overview-brand-card__value">${fmt.number(qty || 0)}</p>
+    </article>`).join('');
+}
+
+function renderSourceWarning(advertencias) {
+  const el = document.getElementById('sourceWarning');
+  if (!el) return;
+  const list = Array.isArray(advertencias) ? advertencias.filter(Boolean) : [];
+  if (!list.length) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = `<strong>Fuentes parciales:</strong> ${escHtml(list.join(' · '))}. El tablero muestra lo disponible.`;
+}
+
+function renderFinancialSummary(f, salesAnalytics, operaciones = {}, puntoEquilibrio = null, extra = {}) {
   const ctx = {
     financial: f,
     operaciones,
     salesAnalytics,
     puntoEquilibrio,
+    marcas: extra.marcas || null,
+    bonos: extra.bonos || null,
+    cierre: extra.cierre || {},
+    monthlyTrend: extra.monthlyTrend,
+    topModels: extra.topModels,
   };
   summaryState.lastPayload = ctx;
 
@@ -2183,10 +2319,29 @@ async function renderOverview(fechaInicio, fechaFin) {
     ]);
     let salesAnalytics = data.salesAnalytics;
     if (!salesAnalytics?.rentabilidad) {
-      salesAnalytics = await api(`/overview/analytics?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+      try {
+        salesAnalytics = await api(`/overview/analytics?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+      } catch (err) {
+        console.warn('[overview] analytics:', err.message);
+        salesAnalytics = salesAnalytics || null;
+      }
     }
 
-    renderFinancialSummary(data.financial, salesAnalytics, data.operaciones || data.kpis || {}, data.puntoEquilibrio);
+    renderBrandStrip(data.marcas);
+    renderSourceWarning(data.advertencias);
+    renderFinancialSummary(
+      data.financial,
+      salesAnalytics,
+      data.operaciones || data.kpis || {},
+      data.puntoEquilibrio,
+      {
+        marcas: data.marcas,
+        bonos: data.bonos,
+        cierre: data.cierre,
+        monthlyTrend: data.monthlyTrend,
+        topModels: data.topModels,
+      },
+    );
 
     setText('lastUpdated', `Actualizado: ${new Date().toLocaleTimeString('es-MX')}`);
 
@@ -2196,6 +2351,8 @@ async function renderOverview(fechaInicio, fechaFin) {
         fechaInicio,
         fechaFin,
         operaciones: data.operaciones || data.kpis || {},
+        bonos: data.bonos || null,
+        marcas: data.marcas || null,
         financial: {
           sales: f.sales || {},
           service: f.service || {},

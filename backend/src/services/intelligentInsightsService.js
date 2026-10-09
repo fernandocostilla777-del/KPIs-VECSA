@@ -1160,20 +1160,13 @@ function buildOverviewInsights(payload = {}) {
   const sales = f.sales || {};
   const service = f.service || {};
   const inventory = f.inventory || {};
+  const bonos = payload.bonos || {};
   const analytics = payload.analytics || payload.salesAnalytics || {};
   const r = analytics.rentabilidad || {};
   const fv = analytics.fuerzaVentas || {};
   const aging = analytics.aging || {};
 
   const unidades = Number(ops.unidadesVendidas ?? sales.units ?? 0);
-  const sofia = Number(ops.entregasSofia ?? 0);
-  const sinPreviasEnt = Number(ops.entregasSinPrevias ?? 0);
-  const sinTimbrar = Number(ops.sinTimbrar ?? 0);
-  const sinPreviasStock = Number(inventory.sinPrevias ?? 0);
-  const available = Number(inventory.availableUnits ?? 0);
-  const ageing = Number(inventory.ageingAlertsCount ?? 0);
-  const planPiso = Number(inventory.planPisoTotal ?? 0);
-  const avgDays = Number(inventory.avgDaysInventory ?? 0);
   const pctFact = Number(service.pctFacturado ?? 0);
   const ingresadas = Number(service.ingresadas ?? 0);
   const marginPct = Number(sales.marginPct ?? r.margenBrutoPct ?? 0);
@@ -1182,82 +1175,58 @@ function buildOverviewInsights(payload = {}) {
     ? fv.ranking.filter((v) => v.quadrant === 'regalo').length
     : Number(fv.regalos ?? 0);
 
-  if (sofia > 0 && sinPreviasEnt / sofia >= 0.08) {
-    const pct = round1((sinPreviasEnt / sofia) * 100);
-    push(list, {
-      id: 'ov-sin-previas-entrega',
-      kpiId: 'ovOrdenesTaller',
-      module: 'overview',
-      severity: 'warning',
-      title: 'Entregas SOFIA sin previa detectadas',
-      summary: `${sinPreviasEnt} de ${sofia} entregas (${pct}%) sin previas.`,
-      analysis: 'Falla de proceso de entrega: se entregan unidades sin órdenes de previa de taller. Revisar en Postventa / Inventario.',
-      recommendations: [
-        'Auditar el flujo previas → SOFIA en Ventas e Inventario.',
-        'Bloquear entregas sin checklist de calidad.',
-      ],
-      metrics: { sinPreviasEnt, sofia, pct },
-      chatPrompt: chatPrompt('Tablero ejecutivo', 'Entregas sin previa', [
-        `Sin previa: ${sinPreviasEnt}`, `SOFIA: ${sofia}`, `Periodo: ${fi} — ${ff}`,
-      ]),
-    });
+  const gestion = inventory.gestion || payload.gestion || null;
+  if (gestion && !gestion.datosEjemplo) {
+    const pctG = Number(gestion.pctEntero ?? gestion.pct ?? 0);
+    const objetivoTxt = gestion.objetivoEtiqueta ? String(gestion.objetivoEtiqueta) : '';
+    const objetivoNum = Number(String(objetivoTxt).replace(/[^\d.]/g, ''));
+    const sobreObjetivo = Number.isFinite(objetivoNum) && objetivoNum > 0 && pctG > objetivoNum;
+    if (gestion.cumple === false || sobreObjetivo) {
+      push(list, {
+        id: 'ov-gestion-inventarios',
+        kpiId: 'ovGestionInventarios',
+        module: 'overview',
+        severity: gestion.cumple === false ? 'critical' : 'warning',
+        title: 'Gestión de Inventarios en riesgo',
+        summary: `${pctG}% de unidades con 120+ días${objetivoTxt ? ` · objetivo ${objetivoTxt}` : ''}.`,
+        analysis: 'El indicador de calidad del bono depende de rotar stock antiguo y cumplir patio VDC cuando aplica.',
+        recommendations: [
+          'Revisar unidades ≥120 días y bloqueos de suministro en Inventario.',
+          'Actualizar captura de patio VDC si falta.',
+        ],
+        metrics: { pctG, cumple: gestion.cumple, antiguos: gestion.antiguos, total: gestion.total },
+        chatPrompt: chatPrompt('Tablero ejecutivo', 'Gestión de inventarios', [
+          `% antigüedad: ${pctG}`, `Cumple: ${gestion.cumple}`, `Periodo: ${fi} — ${ff}`,
+        ]),
+      });
+    }
   }
 
-  if (sinTimbrar >= 5) {
-    push(list, {
-      id: 'ov-sin-timbrar',
-      kpiId: 'ovFacturacionTaller',
-      module: 'overview',
-      severity: 'warning',
-      title: 'Facturas sin timbrar acumuladas',
-      summary: `${sinTimbrar} unidades facturadas sin timbrar en el periodo.`,
-      analysis: 'Falla fiscal/operativa: el backlog de timbrado retrasa cobertura y entregas.',
-      recommendations: ['Priorizar cola de timbrado con sistemas/contabilidad.'],
-      metrics: { sinTimbrar },
-      chatPrompt: chatPrompt('Tablero ejecutivo', 'Sin timbrar', [`Sin timbrar: ${sinTimbrar}`, `Periodo: ${fi} — ${ff}`]),
-    });
-  }
-
-  if (available > 0 && sinPreviasStock / available >= 0.25) {
-    const pct = round1((sinPreviasStock / available) * 100);
-    push(list, {
-      id: 'ov-stock-sin-previas',
-      kpiId: 'ovStockSinPrevias',
-      module: 'overview',
-      severity: 'warning',
-      title: 'Inventario sin previas elevado',
-      summary: `${sinPreviasStock} de ${available} disponibles (${pct}%) sin previas.`,
-      analysis: 'Stock listo para venta/entrega sin preparación de taller: riesgo de entregas defectuosas y demoras.',
-      recommendations: [
-        'Programar previas masivas sobre unidades FIS/DIS sin órdenes S.',
-        'Cruzar con módulo Inventario → Sin previas.',
-      ],
-      metrics: { sinPreviasStock, available, pct },
-      chatPrompt: chatPrompt('Tablero ejecutivo', 'Stock sin previas', [
-        `Sin previas: ${sinPreviasStock}`, `Disponibles: ${available}`, `Periodo: ${fi} — ${ff}`,
-      ]),
-    });
-  }
-
-  if (ageing >= 8 || (available > 0 && ageing / available >= 0.15)) {
-    push(list, {
-      id: 'ov-aging',
-      kpiId: 'ovAging',
-      module: 'overview',
-      severity: ageing >= 15 ? 'critical' : 'warning',
-      title: 'Antigüedad alta (60+ días)',
-      summary: `${ageing} unidades con alerta de antigüedad; plan piso ${round1(planPiso)}.`,
-      analysis:
-        'Falla de rotación: unidades físicas +60 días generan interés de plan piso y presionan a vender con descuento.',
-      recommendations: [
-        'Activar plan de liquidación por antigüedad (precio/bono/transferencia).',
-        'Revisar pedido a planta vs sell-through real.',
-      ],
-      metrics: { ageing, planPiso, avgDays, available },
-      chatPrompt: chatPrompt('Tablero ejecutivo', 'Antigüedad 60+', [
-        `Envejecidas: ${ageing}`, `Plan piso: ${planPiso}`, `Días prom.: ${avgDays}`, `Disponibles: ${available}`,
-      ]),
-    });
+  if (bonos.disponible && !bonos.datosEjemplo) {
+    const alcanceT = Number(bonos.alcanceTrimestral ?? 0);
+    const meses = Array.isArray(bonos.meses) ? bonos.meses : [];
+    const mesRiesgo = meses.find((m) => m.cerrado && Number(m.alcance ?? 0) < 0.8);
+    if (mesRiesgo || alcanceT < 0.9) {
+      push(list, {
+        id: 'ov-bono-volumen',
+        kpiId: 'ovBonoVolumen',
+        module: 'overview',
+        severity: alcanceT < 0.8 ? 'critical' : 'warning',
+        title: 'Bono Volumen en riesgo',
+        summary: mesRiesgo
+          ? `Mes ${mesRiesgo.mes || mesRiesgo.etiqueta} cerrado bajo 80% de objetivo.`
+          : `Alcance trimestral ${round1(alcanceT * 100)}% (meta ≥90%).`,
+        analysis: 'El bono por volumen exige cumplir retail mensual y el alcance del trimestre en curso.',
+        recommendations: [
+          'Revisar captura vs Incadea en Sistema de Bonos.',
+          'Priorizar cierre de retail en los meses restantes del trimestre.',
+        ],
+        metrics: { alcanceT, mesRiesgo: mesRiesgo?.mes || null },
+        chatPrompt: chatPrompt('Tablero ejecutivo', 'Bono volumen', [
+          `Alcance trimestral: ${round1(alcanceT * 100)}%`, `Trimestre: ${bonos.etiqueta || bonos.trimestre}`,
+        ]),
+      });
+    }
   }
 
   if (ingresadas >= 10 && pctFact < 55) {

@@ -17,6 +17,11 @@
   .bonos-pill--debito { background: rgba(220, 38, 38, .15); color: #b91c1c; }
   .bonos-pill--cero { background: rgba(217, 119, 6, .15); color: #b45309; }
   .bonos-pill--info { background: rgba(37, 99, 235, .12); color: #1d4ed8; }
+  .bonos-estado-list, .bonos-adv-list { margin: 10px 0 0; padding-left: 1.2rem; font-size: 13px; line-height: 1.5; color: #334155; }
+  .bonos-estado-list li { margin-bottom: 4px; }
+  .bonos-estado-list .ok { color: #15803d; font-weight: 600; }
+  .bonos-estado-list .warn { color: #b45309; font-weight: 600; }
+  .bonos-estado-list .muted { color: #64748b; }
 </style>
 </head>
 <body class="dashboard-body" data-page="bonos">
@@ -34,6 +39,24 @@
   </div>
 </header>
 <div class="main-content custom-scrollbar">
+
+<section class="section-panel dashboard-section" id="bonosResumenFuente" aria-live="polite">
+  <h3 class="section-title" id="bonosMarcaTitulo">Sistema de Bonos BMW</h3>
+  <p class="section-subtitle" id="bonosResumenIntro">Volumen, orientación al cliente, calidad de rentabilidad, penalizaciones y topes.</p>
+  <div class="kpi-grid" id="bonosTotalesAnio" style="margin-top:14px"></div>
+</section>
+
+<section class="section-panel dashboard-section" id="bonosEstadoPanel">
+  <h3 class="section-title">Fuentes de datos</h3>
+  <p class="section-subtitle" id="bonosEstadoResumen">Verificando configuración…</p>
+  <ul class="bonos-estado-list" id="bonosEstadoLista"></ul>
+</section>
+
+<section id="bonosAdvertencias" class="section-panel bonos-note hidden">
+  <h3 class="section-title">Notas del cálculo</h3>
+  <ul class="bonos-adv-list" id="bonosAdvertenciasLista"></ul>
+  <p class="section-subtitle hidden" id="bonosDiagnostico"></p>
+</section>
 
 <section id="avisoEjemplo" class="section-panel bonos-note hidden">
   <h3 class="section-title">Datos de ejemplo</h3>
@@ -169,8 +192,8 @@
 <script src="/js/auth-client.js"></script>
 <script src="/js/shared.js?v=5"></script>
 <script src="/js/sidebar.js?v=12"></script>
-<script src="/js/topbar.js?v=27"></script>
+<script src="/js/topbar.js?v=28"></script>
 <script src="/js/mobile-nav.js"></script>
-<script src="/js/bonos.js?v=1"></script>
+<script src="/js/bonos.js?v=2"></script>
 </body>
 </html>

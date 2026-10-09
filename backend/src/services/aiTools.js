@@ -1264,13 +1264,13 @@ async function getRiesgosOportunidades(args = {}) {
       resumen: `${Number(service.pctFacturado).toFixed(1)}% de órdenes facturadas — replicar ritmo de cierre.`,
     });
   }
-  if (Number(ops.unidadesVendidas ?? sales.units) > 0 && Number(inv.sinPrevias || 0) === 0) {
+  if (inv.gestion?.cumple === true) {
     oportunidades.unshift({
       tipo: 'oportunidad',
       severity: 'info',
       modulo: 'inventory',
-      titulo: 'Stock con previas al día',
-      resumen: 'No hay disponibles sin previa — ventaja operativa para entregas limpias.',
+      titulo: 'Gestión de inventarios al día',
+      resumen: 'El mes cumple objetivo de antigüedad para el bono de calidad.',
     });
   }
 
@@ -1294,14 +1294,12 @@ async function getRiesgosOportunidades(args = {}) {
     alertasOperativas: alertasOp,
     kpisRapidos: overview?.error ? { error: overview.error } : {
       unidadesVendidas: Number(ops.unidadesVendidas ?? sales.units ?? 0),
-      entregasSofia: Number(ops.entregasSofia ?? 0),
-      entregasSinPrevias: Number(ops.entregasSinPrevias ?? 0),
-      sinTimbrar: Number(ops.sinTimbrar ?? 0),
+      marcas: overview.marcas || null,
+      bonoVolumenAlcance: overview.bonos?.alcanceTrimestral ?? null,
+      gestionInventariosPct: inv.gestion?.pctEntero ?? inv.gestion?.pct ?? null,
       margenPct: Number(sales.marginPct ?? 0),
       inventarioDisponible: Number(inv.availableUnits ?? inv.available ?? 0),
-      sinPreviasStock: Number(inv.sinPrevias ?? 0),
-      envejecidas: Number(inv.ageingAlertsCount ?? 0),
-      planPiso: Number(inv.planPisoTotal ?? 0),
+      lineaCredito60: Number(inv.lineaCreditoUnits ?? inv.ageingAlertsCount ?? 0),
       pctFacturadoTaller: Number(service.pctFacturado ?? 0),
     },
     instruccionRespuesta:

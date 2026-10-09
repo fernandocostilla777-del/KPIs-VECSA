@@ -2032,7 +2032,7 @@
       flotilla: {
         title: 'Ventas MINI',
         hint: 'FLOT y FLOTGMF con contrato flotilla. El menudeo facturado en FLOTGMF va a retail.',
-        icon: 'local_shipping',
+        icon: 'directions_car',
         card: () => els.kpiCardFlotillas,
       },
       sofia: {
@@ -3474,15 +3474,10 @@
     }
     const sideLoadPromise = Promise.allSettled(sideLoads);
 
-    const refreshBtn = document.getElementById('btnRefreshEntregasSofia');
     if (!quiet) {
       setStatus('Consultando...', 'loading');
       els.btnConsultar.disabled = true;
       Dashboard.showLoading(true);
-    } else if (refreshBtn) {
-      refreshBtn.disabled = true;
-      refreshBtn.classList.add('is-refreshing');
-      if (els.kpiEntregasSofiaSub) els.kpiEntregasSofiaSub.textContent = 'Actualizando SOFIA…';
     }
 
     try {
@@ -3720,10 +3715,6 @@
         els.btnConsultar.disabled = false;
         Dashboard.showLoading(false);
       }
-      if (refreshBtn) {
-        refreshBtn.disabled = false;
-        refreshBtn.classList.remove('is-refreshing');
-      }
     }
   }
 
@@ -3845,7 +3836,6 @@
       kpiEntregasSofia: document.getElementById('kpiEntregasSofia'),
       kpiEntregasSofiaSub: document.getElementById('kpiEntregasSofiaSub'),
       kpiCardEntregasSofia: document.getElementById('kpiCardEntregasSofia'),
-      btnRefreshEntregasSofia: document.getElementById('btnRefreshEntregasSofia'),
       panelEntregasSofia: document.getElementById('panelEntregasSofia'),
       sofiaPanelResumen: document.getElementById('sofiaPanelResumen'),
       tablaEntregasPreviewBody: document.getElementById('tablaEntregasPreviewBody'),
@@ -4131,13 +4121,6 @@
     });
 
     els.btnConsultar.addEventListener('click', () => consultar({ quiet: false }));
-    document.getElementById('btnRefreshEntregasSofia')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      consultar({ quiet: true, fresh: true }).catch((err) => {
-        console.error('[SOFIA refresh]', err);
-      });
-    });
     els.btnExportar.addEventListener('click', () => downloadCsv(
       ['Fecha', 'Documento', 'Vendedor', 'Cliente', 'Serie', 'Modelo', 'Anio', 'Color', 'Departamento', 'TipoVenta', 'FormaPago'],
       ['VTE_FECHDOCTO', 'VTE_DOCTO', 'VENDEDOR', 'CLIENTE', 'VTE_SERIE', 'VEH_TIPOAUTO', 'VEH_ANMODELO', 'COL_DESCRIPCION', 'CANAL_LABEL', 'TIPOVENTA', 'FORMAPAGO_ORIGINAL'],

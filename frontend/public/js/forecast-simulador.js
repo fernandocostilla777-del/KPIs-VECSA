@@ -44,6 +44,7 @@
 
   function setStatus(text, kind = '') {
     const el = $('pptoSimStatus');
+    if (!el) return;
     el.textContent = text;
     el.className = `ppto-empresa__status${kind ? ` ppto-empresa__status--${kind}` : ''}`;
   }
@@ -403,12 +404,12 @@
   }
 
   // ------------------------------------------------------------ eventos
-  $('pptoSimGlobales').addEventListener('input', (e) => {
+  $('pptoSimGlobales')?.addEventListener('input', (e) => {
     if (!e.target.matches('input[type="range"]')) return;
     syncOutput(e.target);
     recompute();
   });
-  $('pptoSimTable').addEventListener('input', (e) => {
+  $('pptoSimTable')?.addEventListener('input', (e) => {
     const inp = e.target;
     if (!inp.matches('input[type="range"][data-seg]')) return;
     const l = segLevers[inp.dataset.seg] || (segLevers[inp.dataset.seg] = { ventas: 0, margen: 0, gastos: 0 });
@@ -416,21 +417,21 @@
     syncOutput(inp);
     recompute();
   });
-  $('pptoSimTable').addEventListener('dblclick', (e) => {
+  $('pptoSimTable')?.addEventListener('dblclick', (e) => {
     const inp = e.target.closest('.ppto-sim__cell')?.querySelector('input');
     if (!inp) return;
     inp.value = 0;
     inp.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  $('pptoSimGlobales').addEventListener('dblclick', (e) => {
+  $('pptoSimGlobales')?.addEventListener('dblclick', (e) => {
     const inp = e.target.closest('.ppto-sim__lever')?.querySelector('input');
     if (!inp) return;
     inp.value = 0;
     inp.dispatchEvent(new Event('input', { bubbles: true }));
   });
   document.querySelectorAll('#pptoSim [data-preset]').forEach((btn) => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
-  $('btnSimEquilibrio').addEventListener('click', irAEquilibrio);
-  $('btnSimAplicar').addEventListener('click', aplicarAlGenerador);
+  $('btnSimEquilibrio')?.addEventListener('click', irAEquilibrio);
+  $('btnSimAplicar')?.addEventListener('click', aplicarAlGenerador);
 
   // Si el generador recalcula (otro método, supuestos), el simulador toma la nueva base.
   document.addEventListener('ppto12m:generated', (e) => {

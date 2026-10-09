@@ -1,6 +1,28 @@
 {
   "anio": 2026,
   "trimestres": {
+    "1": {
+      "trimestre": 1,
+      "grupo": { "objetivo": 350 },
+      "bev": { "objetivo": 8 },
+      "inventario": { "objetivoAntiguedad": 10 },
+      "meses": [
+        { "mes": 1, "etiqueta": "ENE", "objetivo": 40 },
+        { "mes": 2, "etiqueta": "FEB", "objetivo": 40 },
+        { "mes": 3, "etiqueta": "MAR", "objetivo": 40 }
+      ]
+    },
+    "2": {
+      "trimestre": 2,
+      "grupo": { "objetivo": 360 },
+      "bev": { "objetivo": 10 },
+      "inventario": { "objetivoAntiguedad": 10 },
+      "meses": [
+        { "mes": 4, "etiqueta": "ABR", "objetivo": 40 },
+        { "mes": 5, "etiqueta": "MAY", "objetivo": 40 },
+        { "mes": 6, "etiqueta": "JUN", "objetivo": 40 }
+      ]
+    },
     "3": {
       "trimestre": 3,
       "grupo": { "objetivo": 380 },

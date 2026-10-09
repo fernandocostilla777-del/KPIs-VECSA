@@ -147,7 +147,7 @@ window.AssistantChat = (function () {
       '¿Cuántas entregas SOFIA van sin previas de taller?',
       'Lista oportunidades con cita que aún no compran',
       '¿Cuántas unidades HIGH END (Suburban/Tahoe/Cheyenne/Traverse) se vendieron este mes?',
-      '¿Cuál es el Precio de Venta GMMX / plan del Aveo con stock?',
+      '¿Qué modelos BMW tienen más stock disponible?',
     ],
     'post-sales': [
       'Resumen de órdenes abiertas críticas (+60 días)',
@@ -161,7 +161,7 @@ window.AssistantChat = (function () {
       'Productividad por asesor de taller del periodo',
     ],
     'lista-precios': [
-      '¿Cuál es el Precio de Venta GMMX del Aveo LT Plus con stock?',
+      '¿Cuál es el precio de lista del Serie 3 con stock?',
       'Compara planes GMF del Traverse con existencia',
       '¿Qué versiones tienen mejor precio final en Guía Administración?',
       'Resume la vigencia de la lista de precios publicada',

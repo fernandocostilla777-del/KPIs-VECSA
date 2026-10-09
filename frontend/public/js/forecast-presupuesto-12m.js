@@ -455,17 +455,17 @@
   }
 
   // ------------------------------------------------------------ eventos
-  $('btnPpto12mGenerar').addEventListener('click', () => generate());
-  $('btnPpto12mXlsx').addEventListener('click', exportXlsx);
-  $('btnPpto12mGuardar').addEventListener('click', () => saveEscenario());
-  $('btnPpto12mGuardarComo').addEventListener('click', () => saveEscenario({ nuevo: true }));
-  $('btnPpto12mEliminar').addEventListener('click', deleteEscenario);
-  $('btnPpto12mReset').addEventListener('click', resetSupuestos);
-  $('ppto12mEscenario').addEventListener('change', onEscenarioChange);
-  $('ppto12mLineaChart').addEventListener('change', () => data && renderChart());
-  $('ppto12mMetodo').addEventListener('change', () => loadedOnce && generate());
-  $('ppto12mInicio').addEventListener('change', () => loadedOnce && generate());
-  $('ppto12m').addEventListener('keydown', (e) => {
+  $('btnPpto12mGenerar')?.addEventListener('click', () => generate());
+  $('btnPpto12mXlsx')?.addEventListener('click', exportXlsx);
+  $('btnPpto12mGuardar')?.addEventListener('click', () => saveEscenario());
+  $('btnPpto12mGuardarComo')?.addEventListener('click', () => saveEscenario({ nuevo: true }));
+  $('btnPpto12mEliminar')?.addEventListener('click', deleteEscenario);
+  $('btnPpto12mReset')?.addEventListener('click', resetSupuestos);
+  $('ppto12mEscenario')?.addEventListener('change', onEscenarioChange);
+  $('ppto12mLineaChart')?.addEventListener('change', () => data && renderChart());
+  $('ppto12mMetodo')?.addEventListener('change', () => loadedOnce && generate());
+  $('ppto12mInicio')?.addEventListener('change', () => loadedOnce && generate());
+  $('ppto12m')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.matches('input.ppto-12m__input')) {
       e.preventDefault();
       generate();

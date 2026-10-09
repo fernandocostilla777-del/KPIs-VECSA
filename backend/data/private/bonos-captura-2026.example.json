@@ -1,6 +1,110 @@
 {
   "anio": 2026,
   "trimestres": {
+    "1": {
+      "trimestre": 1,
+      "etiqueta": "T1",
+      "meses": [
+        { "mes": 1, "etiqueta": "ENE", "retail": 38, "objetivo": 40, "cerrado": true },
+        { "mes": 2, "etiqueta": "FEB", "retail": 41, "objetivo": 40, "cerrado": true },
+        { "mes": 3, "etiqueta": "MAR", "retail": 43, "objetivo": 40, "cerrado": true }
+      ],
+      "grupo": { "real": 360, "objetivo": 350 },
+      "orientacion": {
+        "mercadotecnia": {
+          "responsableCertificado": true,
+          "usoFondo": 0.88,
+          "activacionEstrategica": true,
+          "plan": true
+        },
+        "voc": {
+          "cxa": true,
+          "customerBoard": true,
+          "calidadDatos": true,
+          "incidencias": 0
+        },
+        "retailStandards": { "objetivos": true, "remodelacion": true },
+        "entrenamiento": {
+          "tmsi": true,
+          "dms": true,
+          "ictXev": true,
+          "ictTecnicoSenior": false,
+          "lanzamientoProducto": true
+        }
+      },
+      "calidad": {
+        "bev": { "real": 8, "objetivo": 8 },
+        "inventarios": [
+          { "mes": 1, "etiqueta": "ENE", "unidades": 55, "antiguedadAlta": 5, "bloqueoSuministro": 8, "patioVdc": 0 },
+          { "mes": 2, "etiqueta": "FEB", "unidades": 52, "antiguedadAlta": 4, "bloqueoSuministro": 0, "patioVdc": 5 },
+          { "mes": 3, "etiqueta": "MAR", "unidades": 49, "antiguedadAlta": 3, "bloqueoSuministro": 4, "patioVdc": 4 }
+        ]
+      },
+      "topes": {
+        "demo": 42000,
+        "loaner": 8000,
+        "topManagement": 30000,
+        "tactic": 12000
+      },
+      "penalizaciones": {
+        "cbsDigitalTools": { "cumple": true },
+        "vehiculosDemo": { "cumple": true },
+        "lineaCredito": { "cumple": true },
+        "conversionVentas": { "cumple": true }
+      }
+    },
+    "2": {
+      "trimestre": 2,
+      "etiqueta": "T2",
+      "meses": [
+        { "mes": 4, "etiqueta": "ABR", "retail": 40, "objetivo": 40, "cerrado": true },
+        { "mes": 5, "etiqueta": "MAY", "retail": 32, "objetivo": 40, "cerrado": true },
+        { "mes": 6, "etiqueta": "JUN", "retail": 46, "objetivo": 40, "cerrado": true }
+      ],
+      "grupo": { "real": 370, "objetivo": 360 },
+      "orientacion": {
+        "mercadotecnia": {
+          "responsableCertificado": true,
+          "usoFondo": 0.86,
+          "activacionEstrategica": true,
+          "plan": false
+        },
+        "voc": {
+          "cxa": true,
+          "customerBoard": false,
+          "calidadDatos": true,
+          "incidencias": 1
+        },
+        "retailStandards": { "objetivos": true, "remodelacion": false },
+        "entrenamiento": {
+          "tmsi": true,
+          "dms": true,
+          "ictXev": true,
+          "ictTecnicoSenior": true,
+          "lanzamientoProducto": false
+        }
+      },
+      "calidad": {
+        "bev": { "real": 10, "objetivo": 10 },
+        "inventarios": [
+          { "mes": 4, "etiqueta": "ABR", "unidades": 47, "antiguedadAlta": 6, "bloqueoSuministro": 6, "patioVdc": 4 },
+          { "mes": 5, "etiqueta": "MAY", "unidades": 51, "antiguedadAlta": 7, "bloqueoSuministro": 0, "patioVdc": 5 },
+          { "mes": 6, "etiqueta": "JUN", "unidades": 44, "antiguedadAlta": 5, "bloqueoSuministro": 3, "patioVdc": 6 }
+        ]
+      },
+      "topes": {
+        "demo": 48000,
+        "loaner": 12000,
+        "topManagement": 32000,
+        "tactic": 18000
+      },
+      "penalizaciones": {
+        "cbsDigitalTools": { "cumple": true },
+        "vehiculosDemo": { "cumple": false, "mesesIncumplidos": 1 },
+        "lineaCredito": { "cumple": true },
+        "conversionVentas": { "cumple": true }
+      }
+    },
     "3": {
       "trimestre": 3,
       "etiqueta": "T3",
@@ -64,7 +168,49 @@
         { "mes": 11, "etiqueta": "NOV", "retail": 0, "objetivo": 45, "cerrado": false },
         { "mes": 12, "etiqueta": "DIC", "retail": 0, "objetivo": 50, "cerrado": false }
       ],
-      "grupo": { "real": 18, "objetivo": 140 }
+      "grupo": { "real": 18, "objetivo": 140 },
+      "orientacion": {
+        "mercadotecnia": {
+          "responsableCertificado": true,
+          "usoFondo": 0.72,
+          "activacionEstrategica": false,
+          "plan": true
+        },
+        "voc": {
+          "cxa": true,
+          "customerBoard": true,
+          "calidadDatos": false,
+          "incidencias": 0
+        },
+        "retailStandards": { "objetivos": true, "remodelacion": true },
+        "entrenamiento": {
+          "tmsi": true,
+          "dms": false,
+          "ictXev": true,
+          "ictTecnicoSenior": true,
+          "lanzamientoProducto": true
+        }
+      },
+      "calidad": {
+        "bev": { "real": 4, "objetivo": 15 },
+        "inventarios": [
+          { "mes": 10, "etiqueta": "OCT", "unidades": 38, "antiguedadAlta": 9, "bloqueoSuministro": 2, "patioVdc": 3 },
+          { "mes": 11, "etiqueta": "NOV", "unidades": 38, "antiguedadAlta": 9, "bloqueoSuministro": 0, "patioVdc": 3 },
+          { "mes": 12, "etiqueta": "DIC", "unidades": 38, "antiguedadAlta": 9, "bloqueoSuministro": 0, "patioVdc": 3 }
+        ]
+      },
+      "topes": {
+        "demo": 22000,
+        "loaner": 5000,
+        "topManagement": 15000,
+        "tactic": 8000
+      },
+      "penalizaciones": {
+        "cbsDigitalTools": { "cumple": true },
+        "vehiculosDemo": { "cumple": true },
+        "lineaCredito": { "cumple": false, "mesesIncumplidos": 1 },
+        "conversionVentas": { "cumple": true }
+      }
     }
   }
 }

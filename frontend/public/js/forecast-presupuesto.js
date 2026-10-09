@@ -405,70 +405,28 @@
     }
   }
 
-  $('pptoCorteSelect').addEventListener('change', () => load());
-  $('btnPptoActualizar').addEventListener('click', () => load({ fresh: true }));
-  $('btnPptoCsv').addEventListener('click', downloadCsv);
-  $('pptoLineaSelect').addEventListener('change', (e) => {
+  $('pptoCorteSelect')?.addEventListener('change', () => load());
+  $('btnPptoActualizar')?.addEventListener('click', () => load({ fresh: true }));
+  $('btnPptoCsv')?.addEventListener('click', downloadCsv);
+  $('pptoLineaSelect')?.addEventListener('change', (e) => {
     selectedLine = e.target.value;
     renderMes();
   });
 
-  // ------------------------------------------------------ Pestañas Pronóstico
-  const TAB_TITLES = {
-    ventas: 'Pronóstico de Ventas',
-    presupuesto12m: 'Presupuesto próximos 12 meses',
-    simulador: 'Simulador de presupuesto',
-    presupuesto: 'Seguimiento PPTO 2026',
-  };
-  const TABS = Object.keys(TAB_TITLES);
   let loadedOnce = false;
 
-  function currentTabFromUrl() {
-    const params = new URLSearchParams(location.search);
-    const fromQuery = params.get('tab');
-    const fromHash = location.hash.replace('#', '');
-    const tab = fromQuery || fromHash;
-    return TABS.includes(tab) ? tab : 'ventas';
-  }
-
-  function switchTab(tab, { updateUrl = true } = {}) {
-    const target = TABS.includes(tab) ? tab : 'ventas';
-    document.querySelectorAll('#forecastTabs .contabilidad-tab').forEach((el) => {
-      el.classList.toggle('active', el.dataset.tab === target);
-    });
-    document.querySelectorAll('.forecast-panel').forEach((panel) => {
-      panel.classList.toggle('hidden', panel.dataset.panel !== target);
-    });
-    setText('forecastTopTitle', TAB_TITLES[target]);
-    $('forecastVentasControls')?.classList.toggle('hidden', target !== 'ventas');
-    document.body.dataset.forecastTab = target;
-
-    if (updateUrl) {
-      const url = new URL(location.href);
-      if (target !== 'ventas') url.searchParams.set('tab', target);
-      else url.searchParams.delete('tab');
-      url.hash = '';
-      history.replaceState(null, '', url);
+  document.addEventListener('forecast:tab', (e) => {
+    if (e.detail?.tab !== 'presupuesto') return;
+    if (!loadedOnce) {
+      loadedOnce = true;
+      load();
+    } else if (mesChart) {
+      requestAnimationFrame(() => mesChart.resize());
     }
-
-    document.dispatchEvent(new CustomEvent('forecast:tab', { detail: { tab: target } }));
-
-    if (target === 'presupuesto') {
-      if (!loadedOnce) {
-        loadedOnce = true;
-        load();
-      } else if (mesChart) {
-        // El canvas estaba oculto: forzar reajuste de tamaño
-        requestAnimationFrame(() => mesChart.resize());
-      }
-    }
-  }
-
-  $('forecastTabs')?.addEventListener('click', (e) => {
-    const tab = e.target.closest('.contabilidad-tab');
-    if (!tab) return;
-    switchTab(tab.dataset.tab);
   });
 
-  switchTab(currentTabFromUrl(), { updateUrl: false });
+  if (document.body.dataset.forecastTab === 'presupuesto') {
+    loadedOnce = true;
+    load();
+  }
 })();

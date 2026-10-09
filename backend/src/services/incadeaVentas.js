@@ -365,6 +365,13 @@ function aplicarConteosIncadea(resumen, core) {
   resumen.totalFlotillas = mini;
   resumen.totalNotificacionesEntrega = moto;
   resumen.totalVentas = bmw + mini + moto + otras;
+  resumen.porMarca = {
+    bmw,
+    mini,
+    motorrad: moto,
+    otras,
+    total: bmw + mini + moto + otras,
+  };
   resumen.totalUnidadesFacturadasNoTimbradas = 0;
   resumen.numeradorCobertura = moto;
   resumen.fuente = 'incadea';

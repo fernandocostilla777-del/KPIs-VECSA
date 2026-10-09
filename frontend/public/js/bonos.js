@@ -12,6 +12,14 @@
     liquidacion: 'Liquidación',
   };
 
+  const ARCHIVO_ETIQUETAS = {
+    'bonos-2026': 'Reglas y topes 2026',
+    'bonos-captura-2026': 'Captura trimestral',
+    'bonos-objetivos-2026': 'Carta de objetivos',
+    'incadea-mapeo': 'Mapeo Incadea',
+    'unidades-especiales': 'Unidades especiales',
+  };
+
   function esc(v) {
     return String(v ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -30,6 +38,72 @@
   }
 
   let anual = null;
+  let estadoIncadea = null;
+  let fuenteTrimestre = 'captura';
+
+  function pintarTotalesAnio() {
+    const wrap = document.getElementById('bonosTotalesAnio');
+    const intro = document.getElementById('bonosResumenIntro');
+    const titulo = document.getElementById('bonosMarcaTitulo');
+    if (!anual || !wrap) return;
+    titulo.textContent = `Sistema de Bonos ${anual.anio || 2026} · ${anual.marca || 'BMW'}`;
+    const t = anual.totales || {};
+    intro.textContent = `${t.trimestresCapturados || 0} trimestre(s) con captura · neto acumulado ${money(t.neto)} · volumen acumulado ${money(t.volumen)}`;
+    wrap.innerHTML = [
+      ['Neto acumulado', t.neto, 'kpi-card--amber'],
+      ['Volumen acumulado', t.volumen, 'kpi-card--blue'],
+      ['Trimestres capturados', t.trimestresCapturados, 'kpi-card--slate', true],
+    ].map(([tituloKpi, valor, clase, esNumero]) => `
+      <div class="kpi-card ${clase}">
+        <div class="kpi-card-head"><span class="kpi-title">${esc(tituloKpi)}</span></div>
+        <div class="kpi-value">${esNumero ? esc(valor) : money(valor)}</div>
+        <div class="kpi-accent"></div>
+      </div>`).join('');
+  }
+
+  function pintarEstado(estado) {
+    estadoIncadea = estado;
+    const resumen = document.getElementById('bonosEstadoResumen');
+    const lista = document.getElementById('bonosEstadoLista');
+    if (!resumen || !lista) return;
+
+    const inc = estado?.configurado
+      ? '<span class="ok">Incadea conectada</span> — el retail del trimestre puede calcularse desde facturación.'
+      : '<span class="warn">Incadea sin configurar</span> — se usan retail y objetivos de la captura manual.';
+    resumen.innerHTML = inc;
+
+    const archivos = estado?.archivos || {};
+    lista.innerHTML = Object.entries(ARCHIVO_ETIQUETAS).map(([clave, etiqueta]) => {
+      const meta = archivos[clave];
+      if (!meta) return `<li class="muted">${esc(etiqueta)}: no registrado</li>`;
+      if (meta.presente) {
+        const ej = meta.datosEjemplo ? ' · plantilla de ejemplo' : ' · archivo real';
+        return `<li><span class="ok">✓</span> ${esc(etiqueta)}${esc(ej)}</li>`;
+      }
+      return `<li><span class="warn">○</span> ${esc(etiqueta)}: pendiente</li>`;
+    }).join('');
+  }
+
+  function pintarAdvertencias(data) {
+    const panel = document.getElementById('bonosAdvertencias');
+    const ul = document.getElementById('bonosAdvertenciasLista');
+    const diag = document.getElementById('bonosDiagnostico');
+    const items = Array.isArray(data?.advertencias) ? data.advertencias : [];
+    const hay = items.length > 0 || data?.diagnostico;
+    panel?.classList.toggle('hidden', !hay);
+    if (ul) ul.innerHTML = items.map((t) => `<li>${esc(t)}</li>`).join('');
+    if (diag && data?.diagnostico) {
+      const d = data.diagnostico;
+      const partes = [];
+      if (d.retail != null) partes.push(`Retail Incadea: ${d.retail} unidades`);
+      if (d.inventario?.total != null) partes.push(`Inventario al corte: ${d.inventario.total} u. (${d.inventario.antiguos || 0} antigüedad alta)`);
+      if (d.demos != null) partes.push(`Demos activos: ${d.demos}`);
+      diag.textContent = partes.join(' · ');
+      diag.classList.toggle('hidden', !partes.length);
+    } else {
+      diag?.classList.add('hidden');
+    }
+  }
 
   function pintarAnio() {
     const body = document.getElementById('tablaAnio');
@@ -52,6 +126,7 @@
         <td class="cell-money">${money(t.neto)}</td>
       </tr>`;
     }).join('');
+    pintarTotalesAnio();
   }
 
   function pintarDetalle(data) {
@@ -59,16 +134,22 @@
     const aviso = document.getElementById('avisoEjemplo');
     aviso.classList.toggle('hidden', !data.datosEjemplo);
 
+    const fuenteTxt = fuenteTrimestre === 'incadea'
+      ? 'Retail desde Incadea · orientación/calidad/penalizaciones desde captura'
+      : 'Captura manual en backend/data/private/';
+    document.getElementById('volumenMeta').dataset.fuente = fuenteTxt;
+
     document.getElementById('tarjetasTrimestre').innerHTML = [
       ['Volumen', r.volumen.bonoTrimestral, 'kpi-card--blue'],
       ['Orientación', r.orientacion.total, 'kpi-card--violet'],
       ['Calidad', r.calidad.total, 'kpi-card--green'],
+      ['Penalizaciones', r.penalizaciones.total, 'kpi-card--rose'],
       ['Neto', r.neto.neto, 'kpi-card--amber'],
     ].map(([titulo, valor, clase]) => `
       <div class="kpi-card ${clase}">
         <div class="kpi-card-head"><span class="kpi-title">${titulo}</span></div>
         <div class="kpi-value">${money(valor)}</div>
-        <p class="kpi-subtitle">${r.provisional ? 'Trimestre provisional' : r.etiqueta || ''}</p>
+        <p class="kpi-subtitle">${r.provisional ? 'Trimestre provisional' : r.etiqueta || ''}${fuenteTrimestre === 'incadea' ? ' · Incadea' : ''}</p>
         <div class="kpi-accent"></div>
       </div>`).join('');
 
@@ -77,7 +158,7 @@
       ? `Grupo ${pct(vol.grupo.alcance)} ${vol.grupo.cumple ? '(cumple)' : '(no cumple)'}`
       : 'Sin condición de grupo';
     document.getElementById('volumenMeta').textContent =
-      `Alcance trimestral ${pct(vol.alcanceTrimestral)} · bono ${money(vol.bonoTrimestral)} · mes 3 ${money(vol.pagoMes3)} · ${grupo}`;
+      `Alcance trimestral ${pct(vol.alcanceTrimestral)} · bono ${money(vol.bonoTrimestral)} · mes 3 ${money(vol.pagoMes3)} · ${grupo} · ${fuenteTxt}`;
 
     document.getElementById('tablaVolumen').innerHTML = vol.meses.map((m) => `
       <tr>
@@ -129,6 +210,8 @@
         <td class="cell-money">${money(d.tope)}</td>
         <td class="cell-money">${money(d.aplicado)}</td>
       </tr>`).join('');
+
+    pintarAdvertencias(data);
   }
 
   function pintarEscenarios(data) {
@@ -155,18 +238,33 @@
   }
 
   async function cargarTrimestre(trimestre) {
-    const data = await api(`/bonos/resumen?trimestre=${encodeURIComponent(trimestre)}`);
+    fuenteTrimestre = 'captura';
+    let data;
+    const usarIncadea = estadoIncadea?.configurado
+      && estadoIncadea?.archivos?.['bonos-objetivos-2026']?.presente;
+    if (usarIncadea) {
+      try {
+        data = await api(`/bonos/incadea/resumen?trimestre=${encodeURIComponent(trimestre)}`);
+        fuenteTrimestre = 'incadea';
+      } catch {
+        data = await api(`/bonos/resumen?trimestre=${encodeURIComponent(trimestre)}`);
+      }
+    } else {
+      data = await api(`/bonos/resumen?trimestre=${encodeURIComponent(trimestre)}`);
+    }
     pintarDetalle(data);
   }
 
   async function recargar() {
     showLoading(true);
     try {
-      const [anio, escenarios] = await Promise.all([
+      const [anio, escenarios, estado] = await Promise.all([
         api('/bonos/anual'),
         api('/bonos/escenarios'),
+        api('/bonos/incadea/estado').catch(() => ({ configurado: false, archivos: {} })),
       ]);
       anual = anio;
+      pintarEstado(estado);
       document.getElementById('avisoEjemplo').classList.toggle('hidden', !anio.datosEjemplo);
       pintarAnio();
       pintarEscenarios(escenarios);
@@ -175,6 +273,7 @@
       if (sel.value) await cargarTrimestre(sel.value);
     } catch (err) {
       document.getElementById('tablaAnio').innerHTML = filaVacia(7, err.message || 'No se pudo cargar');
+      document.getElementById('bonosEstadoResumen').textContent = err.message || 'Error al cargar bonos';
     } finally {
       showLoading(false);
     }

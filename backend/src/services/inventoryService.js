@@ -1438,6 +1438,14 @@ async function getInventory({ planPisoPeriod = 'all', mes = '' } = {}) {
   }
   const availableSituations = new Set(['DIS', 'FIS', 'SEP']);
   const available = units.filter((u) => availableSituations.has(u.situacion));
+  const especialesConteo = { Demo: 0, Loaner: 0, Top: 0, Tactic: 0 };
+  for (const unit of units) {
+    const tipo = unit.tipoEspecial;
+    if (tipo && Object.prototype.hasOwnProperty.call(especialesConteo, tipo)) {
+      especialesConteo[tipo] += 1;
+    }
+  }
+  const lineaCreditoUnits = available.filter((u) => Number(u.daysInStock ?? 0) > 60).length;
   const demos = units.filter((u) => u.situacion === 'DEMO');
   const apartadas = units.filter((u) => u.isApartada);
   const daysValues = units.map((u) => u.daysInStock).filter((d) => d !== null);
@@ -1543,6 +1551,8 @@ async function getInventory({ planPisoPeriod = 'all', mes = '' } = {}) {
       ageingAlertsCount: ageingAlerts.length,
       ageingAlertsPlanPisoTotal: Math.round(ageingAlertsPlanPisoTotal * 100) / 100,
       ageing120,
+      especialesConteo,
+      lineaCreditoUnits,
       corteInventario: corte ? isoDiaLocal(corte) : null,
       corteEsFotoActual: !cortePasado,
       bySituacion,
