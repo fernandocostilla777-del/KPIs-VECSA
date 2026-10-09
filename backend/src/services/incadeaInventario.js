@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../db');
 const { leerPrivado } = require('../incadea/privateStore');
 const { tabla } = require('../incadea/queries');
+const { loadIngresosFiMap } = require('./fiSheetsService');
 
 function empresaIncadea() {
   try {
@@ -501,9 +502,107 @@ function marcaDe(grupo, marca) {
   return 'Sin marca';
 }
 
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function formatMonthLabel(fechaInicio) {
+  const [y, m] = String(fechaInicio || '').split('-').map(Number);
+  if (!y || !m) return '';
+  return `${MONTH_NAMES[m - 1]} ${y}`;
+}
+
+function pctComisionVehiculoEv(unidadesMes) {
+  const n = Math.max(0, Math.floor(Number(unidadesMes) || 0));
+  if (n >= 10) return 16;
+  if (n >= 8) return 15;
+  if (n <= 0) return 7;
+  return 7 + n;
+}
+
+const COMISION_EV_LEASING_PCT = 1;
+
+function isLeasingCliente(cliente) {
+  const t = String(cliente || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  return /\bLEAS(ING)?\b|\bARREND|\bBMW FINANCIAL|\bALPHABET\b/.test(t);
+}
+
+async function loadVentasMesPorVendedorIncadea(pool, empresa, fechaInicio, fechaFin) {
+  const factura = tabla(empresa, 'Sales Invoice Line');
+  const facturaHdr = tabla(empresa, 'Sales Invoice Header');
+  const cliente = tabla(empresa, 'Customer');
+  const map = new Map();
+  try {
+    const res = await pool.request()
+      .input('mesInicio', sql.Date, new Date(`${fechaInicio}T12:00:00`))
+      .input('mesFin', sql.Date, new Date(`${fechaFin}T12:00:00`))
+      .query(`
+        SELECT
+          LTRIM(RTRIM(ISNULL(h.[Salesperson Code], ''))) AS vendedorId,
+          COUNT(DISTINCT l.[VIN]) AS unidades
+        FROM ${factura} l
+        INNER JOIN ${facturaHdr} h ON h.[No_] = l.[Document No_]
+        LEFT JOIN ${cliente} c ON c.[No_] = h.[Sell-to Customer No_]
+        WHERE l.[Posting Date] >= @mesInicio
+          AND l.[Posting Date] < DATEADD(day, 1, @mesFin)
+          AND l.[Type] = 2
+          AND l.[Item Type] = 2
+          AND l.[Quantity] > 0
+          AND LTRIM(RTRIM(ISNULL(l.[VIN], ''))) <> ''
+          AND l.[Gen_ Prod_ Posting Group] LIKE 'VN%'
+          AND ISNULL(h.[Customer Group Code], '') <> 'ICC'
+          AND ISNULL(c.[Customer Posting Group], '') <> 'C-ICC'
+        GROUP BY LTRIM(RTRIM(ISNULL(h.[Salesperson Code], '')))
+      `);
+    for (const row of res.recordset || []) {
+      const vid = String(row.vendedorId || '').trim();
+      if (!vid) continue;
+      map.set(vid, Number(row.unidades || 0));
+    }
+  } catch (err) {
+    console.warn('[incadeaInventario] Error cargando ventas del mes para comisión EV:', err?.message || err);
+  }
+  return map;
+}
+
+async function loadFondeosPorVinIncadea(pool, empresa, fechaInicio, fechaFin) {
+  const cTbl = tabla(empresa, 'Cust_ Ledger Entry');
+  const dcleTbl = tabla(empresa, 'Detailed Cust_ Ledg_ Entry');
+  const set = new Set();
+  try {
+    const res = await pool.request()
+      .input('desde', sql.Date, new Date(`${fechaInicio}T12:00:00`))
+      .input('hasta', sql.Date, new Date(`${fechaFin}T12:00:00`))
+      .query(`
+        SELECT DISTINCT
+          LTRIM(RTRIM(c.[VIN])) AS vin
+        FROM ${cTbl} c
+        JOIN ${dcleTbl} d ON d.[Cust_ Ledger Entry No_] = c.[Entry No_]
+        JOIN ${cTbl} app ON app.[Entry No_] = d.[Applied Cust_ Ledger Entry No_]
+        WHERE c.[Posting Date] >= @desde AND c.[Posting Date] < DATEADD(day, 1, @hasta)
+          AND d.[Entry Type] = 2
+          AND app.[Description] LIKE '%FONDEO%'
+          AND LTRIM(RTRIM(ISNULL(c.[VIN], ''))) <> ''
+      `);
+    for (const row of res.recordset || []) {
+      const v = String(row.vin || '').trim().toUpperCase();
+      if (v) set.add(v);
+    }
+  } catch (err) {
+    console.warn('[incadeaInventario] Error cargando fondeos por VIN:', err?.message || err);
+  }
+  return set;
+}
+
 /**
  * Cierre de unidades nuevas facturadas. Precio y costo salen de la línea
- * de factura. No inventa comisión, previa ni plan piso.
+ * de factura. Comisiones de EV calculadas bajo el esquema de menudeo (tabulador mes actual + arrendamiento).
  */
 async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
   const empresa = empresaIncadea();
@@ -514,6 +613,14 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
   const vehiculo = tabla(empresa, 'Vehicle');
   const vendedorTbl = tabla(empresa, 'Salesperson_Purchaser');
   const pool = await getPool();
+
+  const mesActualLabel = formatMonthLabel(fechaInicio);
+  const [ventasByVendedor, fiByVin, fondeosSet] = await Promise.all([
+    loadVentasMesPorVendedorIncadea(pool, empresa, fechaInicio, fechaFin),
+    loadIngresosFiMap(),
+    loadFondeosPorVinIncadea(pool, empresa, fechaInicio, fechaFin),
+  ]);
+
   const result = await pool.request()
     .input('fechaInicio', sql.Date, new Date(`${fechaInicio}T12:00:00`))
     .input('fechaFin', sql.Date, new Date(`${fechaFin}T12:00:00`))
@@ -534,6 +641,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
         h.[Salesperson Code] AS vendedorFactura,
         LTRIM(RTRIM(ISNULL(sp.[Name], ''))) AS vendedorNombre,
         h.[Sell-to Customer Name] AS cliente,
+        h.[Payment Method Code] AS formaPago,
         CASE
           WHEN v.[Purchase Receipt Date] > '19900101' THEN v.[Purchase Receipt Date]
           WHEN v.[Purchase Invoice Date] > '19900101' THEN v.[Purchase Invoice Date]
@@ -563,7 +671,7 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
         0 AS importe,
         0 AS costo,
         l.[Gen_ Prod_ Posting Group] AS grupo,
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
       FROM ${credito} l
       WHERE l.[Posting Date] >= @fechaInicio
         AND l.[Posting Date] < DATEADD(day, 1, @fechaFin)
@@ -622,15 +730,38 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
     const notaCreditoSinIva = dinero(notasVecsa.reduce((s, item) => s + Number(item.importe || 0), 0));
     const notaCargoFolio = [...new Set(notasVecsa.map((item) => item.doc).filter(Boolean))].join(', ') || null;
     const utilidadBase = costo != null && subtotal > 0 ? dinero(subtotal - costo) : null;
-    const utilidad = utilidadBase == null ? null : dinero(utilidadBase + bonosImporte);
+    const utilidad = utilidadBase == null ? null : dinero(utilidadBase + bonosImporte - (notaCreditoSinIva || 0));
     const gastosVin = (gastos.get(vinClave) || [])
       .filter((item) => gastoDelCierre(item.fecha, row.fechaVenta));
     const gastosImporte = dinero(gastosVin.reduce((s, item) => s + Number(item.importe || 0), 0));
-    const utilidadNeta = utilidad == null ? null : dinero(utilidad - gastosImporte);
+
     const dias = diasEntre(row.fechaIngreso, row.fechaVenta);
     const vendedorCodigo = String(row.vendedorFactura || row.vendedorVeh || '').trim() || null;
     const vendedorNombre = String(row.vendedorNombre || '').trim() || null;
     const vendedor = vendedorNombre || vendedorCodigo;
+
+    // Cálculo de comisión de E.V. con las unidades vendidas en el mes actual (tabulador Chevrolet):
+    const unidadesMes = vendedorCodigo ? (ventasByVendedor.get(vendedorCodigo) || 0) : 0;
+    const pctVehiculo = pctComisionVehiculoEv(unidadesMes);
+    const formaPagoStr = String(row.formaPago || '').trim();
+    const esArrendamiento = isLeasingCliente(row.cliente) || formaPagoStr.toUpperCase().includes('LEAS');
+    const pctLeasing = esArrendamiento ? COMISION_EV_LEASING_PCT : 0;
+    const pctTotal = pctVehiculo + pctLeasing;
+
+    const extras = gastosImporte;
+    const baseComision = utilidad != null ? dinero(utilidad - extras) : null;
+    const comisionEv = (baseComision != null && baseComision > 0)
+      ? dinero(baseComision * (pctTotal / 100))
+      : 0;
+
+    const utilidadNeta = utilidad == null ? null : dinero(utilidad - comisionEv - extras);
+
+    const fiData = fiByVin.get(vinClave);
+    const hasFondeo = fondeosSet.has(vinClave);
+    const hasFi = Boolean(fiData && Number(fiData.monto || 0) > 0);
+    const esCredito = hasFondeo || hasFi || esArrendamiento;
+    const tipoPago = esCredito ? 'credito' : 'contado';
+
     table.push({
       carline: carlineDe(row.grupo, row.marca),
       marca: marcaDe(row.grupo, row.marca),
@@ -660,21 +791,23 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
       vendedorId: vendedorCodigo,
       vendedor,
       cliente: String(row.cliente || '').replace(/\s+/g, ' ').trim() || null,
-      formaPago: null,
+      formaPago: formaPagoStr || null,
+      tipoPago,
       tipoVenta,
       isFlotilla: tiposVenta.includes('Corporativo'),
       isDemo: tiposVenta.includes('Demo') || String(row.grupo || '').toUpperCase().startsWith('VD'),
       demoHint: tiposVenta.includes('Demo') ? 'Clasificada por bono demo o descuento demo' : null,
       observacion: String(row.grupo || '').trim() || null,
       ubicacion: null,
-      comisionEv: 0,
-      comisionEvBase: null,
-      comisionEvPct: null,
-      comisionEvPctVehiculo: null,
-      comisionEvPctLeasing: null,
-      comisionEvUnidadesPrev: null,
-      comisionEvArrendamiento: false,
-      comisionEvMesPrev: null,
+      comisionEv,
+      comisionEvBase: baseComision,
+      comisionEvPct: pctTotal,
+      comisionEvPctVehiculo: pctVehiculo,
+      comisionEvPctLeasing: pctLeasing,
+      comisionEvUnidades: unidadesMes,
+      comisionEvUnidadesPrev: unidadesMes,
+      comisionEvArrendamiento: esArrendamiento,
+      comisionEvMesPrev: mesActualLabel || null,
       costoPrevia: 0,
       costoMercadotecnia: 0,
       costoPublicidad: 0,
@@ -687,10 +820,10 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
       gastosDetalle: gastosVin.map(({ label, importe, doc }) => ({ label, importe, doc })),
       planPisoAcumulado: 0,
       generaInteres: false,
-      ingresoFinanciamiento: null,
-      ingresoFinanciamientoCount: 0,
-      ingresoFinanciamientoFuente: null,
-      ingresoFinanciamientoDetalle: [],
+      ingresoFinanciamiento: fiData ? fiData.monto : null,
+      ingresoFinanciamientoCount: fiData ? fiData.count : 0,
+      ingresoFinanciamientoFuente: fiData ? fiData.fuente : null,
+      ingresoFinanciamientoDetalle: fiData ? fiData.byConcepto : [],
       utilidadNeta,
       daysChargeable: 0,
       previas: 0,
@@ -714,19 +847,19 @@ async function getIncadeaCierreVendidos({ fechaInicio, fechaFin } = {}) {
     fuente: 'incadea',
     vendidosTable: table,
     carlineFilters,
-    comisionEvMesPrev: null,
+    comisionEvMesPrev: mesActualLabel || null,
     summary: {
       unidades: table.length,
       utilidad: sumar('utilidadPromedio'),
-      comisionEv: 0,
+      comisionEv: sumar('comisionEv'),
       extras: sumar('gastosAdicionales'),
       planPiso: 0,
-      ingresoFinanciamiento: 0,
-      conIngresoFinanciamiento: 0,
+      ingresoFinanciamiento: sumar('ingresoFinanciamiento'),
+      conIngresoFinanciamiento: table.filter((r) => Number(r.ingresoFinanciamiento || 0) > 0).length,
       utilidadNeta: sumar('utilidadNeta'),
       conPlanPiso: 0,
-      conNotaCargo: 0,
-      conArrendamiento: 0,
+      conNotaCargo: table.filter((r) => Number(r.notaCargoSinIva || 0) > 0).length,
+      conArrendamiento: table.filter((r) => r.comisionEvArrendamiento).length,
     },
   };
 }

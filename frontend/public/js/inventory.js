@@ -1755,13 +1755,14 @@ function renderRetencionCell(pct) {
 function renderComisionEvCell(r, fmt) {
   const importe = Number(r.comisionEv || 0);
   const pct = Number(r.comisionEvPct || 0);
-  const uds = Number(r.comisionEvUnidadesPrev || 0);
-  const mes = String(r.comisionEvMesPrev || 'mes ant.').trim();
-  const udsLabel = uds >= 10 ? '10+' : String(uds);
+  const uds = Number(r.comisionEvUnidades != null ? r.comisionEvUnidades : (r.comisionEvUnidadesPrev || 0));
+  const mes = String(r.comisionEvMesPrev || '').trim();
+  const udsLabel = `${uds} ${uds === 1 ? 'ud' : 'uds'}`;
+  const hintMes = mes ? ` ${mes}` : '';
   const arrend = r.comisionEvArrendamiento
     ? ` · +${Number(r.comisionEvPctLeasing || 1)}% arrend.`
     : '';
-  const hint = `${pct}% · ${udsLabel} uds menudeo ${mes}${arrend}`;
+  const hint = `${pct}% · ${udsLabel} menudeo${hintMes}${arrend}`;
   if (!importe) {
     return `<span class="ageing-slow-hint">${escapeHtml(hint)}</span>`;
   }
@@ -1867,12 +1868,12 @@ function renderIngresoFiCell(r, fmt) {
   }
   const detalle = Array.isArray(r.ingresoFinanciamientoDetalle) ? r.ingresoFinanciamientoDetalle : [];
   const items = detalle.map((d) => ({
-    label: d.concepto || 'PAGO GMF',
+    label: d.concepto || 'Financiamiento F&I',
     value: Number(d.monto || 0) || 0,
-    hint: Number(d.count || 0) > 1 ? `${d.count} pagos` : '',
+    hint: d.contrato ? `Contrato ${d.contrato}` : (Number(d.count || 0) > 1 ? `${d.count} pagos` : ''),
   }));
   const count = Number(r.ingresoFinanciamientoCount || 0) || items.length;
-  const fuente = 'PAGOS GMF';
+  const fuente = r.ingresoFinanciamientoFuente || 'BMW FS F&I';
   const payload = encodeURIComponent(JSON.stringify({
     kicker: 'Ingresos F&I',
     totalLabel: 'Total financiamiento',
@@ -2025,11 +2026,13 @@ function renderVendidosFichaCell(r) {
     cliente: r.cliente || '',
     tipoVenta: r.tipoVenta || '',
     formaPago: r.formaPago || '',
+    tipoPago: r.tipoPago || vendidosTipoPago(r) || '',
     isDemo: Boolean(r.isDemo),
     demoHint: r.demoHint || '',
     isFlotilla: Boolean(r.isFlotilla),
     arrendamiento: Boolean(r.comisionEvArrendamiento),
     comisionPct: r.comisionEvPct,
+    unidades: r.comisionEvUnidades != null ? r.comisionEvUnidades : r.comisionEvUnidadesPrev,
     unidadesPrev: r.comisionEvUnidadesPrev,
     mesPrev: r.comisionEvMesPrev || '',
     notaFolio: r.notaCargoFolio || '',
@@ -2062,8 +2065,8 @@ function openFichaPopover(anchor) {
     const [y, m, d] = iso.slice(0, 10).split('-');
     return `${d}/${m}/${y}`;
   };
-  const uds = Number(data.unidadesPrev || 0);
-  const udsLabel = uds >= 10 ? '10+' : String(uds);
+  const uds = Number(data.unidades != null ? data.unidades : (data.unidadesPrev || 0));
+  const udsLabel = `${uds} ${uds === 1 ? 'ud' : 'uds'}`;
   pop.innerHTML = `
     <div class="extras-popover__head">
       <div>
@@ -2076,6 +2079,7 @@ function openFichaPopover(anchor) {
       </button>
     </div>
     <ul class="extras-popover__list">
+      ${fichaRow('Tipo de pago', data.tipoPago === 'contado' ? 'Contado' : (data.tipoPago === 'credito' ? 'Crédito' : '—'))}
       ${fichaRow('Vendedor', data.vendedor || '—')}
       ${fichaRow('Demo', demoLabel, data.isDemo ? (data.demoHint || 'Detectada en observación / ubicación') : 'Sin marca de demo')}
       ${fichaRow('Cliente', data.cliente || '—')}
@@ -2085,7 +2089,7 @@ function openFichaPopover(anchor) {
       ${fichaRow('Canal', data.isFlotilla ? 'Flotilla' : 'Menudeo')}
       ${fichaRow('Arrendamiento', data.arrendamiento ? 'Sí' : 'No')}
       ${fichaRow('Días en inventario', data.daysInStock == null ? '—' : `${data.daysInStock} días`, data.fechaRemision ? `Remisión ${fmtDate(data.fechaRemision)}` : '')}
-      ${fichaRow('Comisión E.V.', data.comisionPct == null ? '—' : `${data.comisionPct}%`, `${udsLabel} uds menudeo ${data.mesPrev || 'mes ant.'}`)}
+      ${fichaRow('Comisión E.V.', data.comisionPct == null ? '—' : `${data.comisionPct}%`, `${udsLabel} menudeo${data.mesPrev ? ` ${data.mesPrev}` : ''}`)}
       ${fichaRow('Nota de crédito', data.notaFolio || 'Sin nota')}
       ${(Array.isArray(data.bonosDetalle) && data.bonosDetalle.length)
         ? data.bonosDetalle.map((item) => fichaRow(item.tipo || 'Bono', Dashboard.fmt.money(Number(item.importe || 0)), item.doc || '')).join('')
@@ -2188,12 +2192,27 @@ function bindExtrasPopover(root) {
   });
 }
 
-const VENDIDOS_CONTADO = new Set(['CASACON', 'PLNCON', 'CHCON', 'FORCON', 'ZACCON', 'CON', 'FLOT']);
+const VENDIDOS_CONTADO = new Set([
+  'CASACON', 'PLNCON', 'CHCON', 'FORCON', 'ZACCON', 'CON', 'FLOT',
+  'TM', 'EF', 'TC', 'TD', 'CH', 'TARJCR', 'TARJDE', 'INTERCOM', 'SR',
+]);
 
 function vendidosTipoPago(row) {
+  if (row?.tipoPago) {
+    const tp = String(row.tipoPago).trim().toLowerCase();
+    if (tp === 'contado' || tp === 'credito') return tp;
+  }
+  const fi = Number(row?.ingresoFinanciamiento || 0);
+  if (fi > 0 || (row?.ingresoFinanciamientoCount && row.ingresoFinanciamientoCount > 0)) {
+    return 'credito';
+  }
+  if (row?.comisionEvArrendamiento) {
+    return 'credito';
+  }
   const key = String(row?.formaPago || '').trim().toUpperCase();
   if (VENDIDOS_CONTADO.has(key)) return 'contado';
-  if (!key || key === 'PERDIDA') return '';
+  if (key === 'NI' || !key) return 'contado';
+  if (key === 'PERDIDA') return '';
   return 'credito';
 }
 
@@ -2247,7 +2266,7 @@ function filteredVendidosRows() {
   if (!q) return rows;
   return rows.filter((r) => [
     r.vin, r.carline, r.marca, r.version, r.catalogo, r.paquete, r.factura, r.notaCargoFolio,
-    r.vendedor, r.cliente, r.tipoVenta, r.formaPago,
+    r.vendedor, r.cliente, r.tipoVenta, r.formaPago, r.tipoPago, vendidosTipoPago(r),
   ].some((v) => String(v || '').toLowerCase().includes(q)));
 }
 

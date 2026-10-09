@@ -45,4 +45,7 @@ stitch_liquid_glass_analytics/
 *.db
 *.db-shm
 *.db-wal
+backend/data/fi-pagos-cache.json
+backend/data/afluencia-source.xlsx
+backend/data/summaryKpiPrefs.json
 
